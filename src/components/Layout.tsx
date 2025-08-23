@@ -32,24 +32,12 @@ export const Layout = ({ children }: LayoutProps) => {
         
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-            <div className="h-full flex items-center justify-between px-6">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="lg:hidden" />
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center">
-                    <span className="text-sm font-bold text-white">LV</span>
-                  </div>
-                  <div className="hidden sm:block">
-                    <h1 className="font-semibold text-foreground">Leona Vity Eventos</h1>
-                    <p className="text-xs text-muted-foreground">Painel Administrativo</p>
-                  </div>
-                </div>
-              </div>
-
+          <header className="h-16 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
+            <div className="h-full flex items-center justify-end px-6">
               {/* User Menu */}
               <div className="flex items-center gap-3">
-                <div className="realtime-indicator">
+                <div className="inline-flex items-center gap-1.5 text-xs font-medium text-accent">
+                  <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
                   Tempo real
                 </div>
                 
