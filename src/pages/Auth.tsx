@@ -44,10 +44,17 @@ export default function Auth() {
     if (isRecovery) setMode('update');
   }, [isRecovery]);
 
-  // Redirect if already authenticated (except for password recovery)
+  // Early redirect to prevent render loops
+  useEffect(() => {
+    if (user && !authLoading && !isRecovery) {
+      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
+    }
+  }, [user, authLoading, isRecovery, navigate, location.state]);
+
+  // Prevent rendering if redirect should happen
   if (user && !authLoading && !isRecovery) {
-    const from = (location.state as any)?.from?.pathname || '/dashboard';
-    return <Navigate to={from} replace />;
+    return null;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
