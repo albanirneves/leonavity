@@ -1,96 +1,90 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Design System - Leona Vity Eventos Admin */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 240 7% 98%;
+    --foreground: 240 10% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 10% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 10% 8%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 240 76% 56%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 10%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 240 76% 56%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 240 8% 97%;
+    --sidebar-foreground: 240 6% 46%;
+    --sidebar-primary: 240 76% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 94%;
+    --sidebar-accent-foreground: 240 6% 10%;
+    --sidebar-border: 240 6% 90%;
+    --sidebar-ring: 240 76% 56%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 240 10% 4%;
+    --foreground: 240 5% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 8% 6%;
+    --card-foreground: 240 5% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 8% 6%;
+    --popover-foreground: 240 5% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 240 84% 65%;
+    --primary-foreground: 240 10% 4%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 4% 14%;
+    --secondary-foreground: 240 5% 84%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 4% 14%;
+    --muted-foreground: 240 5% 64%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 240 4% 14%;
+    --accent-foreground: 240 5% 84%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 240 4% 18%;
+    --input: 240 4% 18%;
+    --ring: 240 84% 65%;
+
+    --sidebar-background: 240 8% 6%;
+    --sidebar-foreground: 240 5% 64%;
+    --sidebar-primary: 240 84% 65%;
+    --sidebar-primary-foreground: 240 10% 4%;
+    --sidebar-accent: 240 4% 12%;
+    --sidebar-accent-foreground: 240 5% 84%;
+    --sidebar-border: 240 4% 18%;
+    --sidebar-ring: 240 84% 65%;
   }
 }
 
@@ -98,8 +92,264 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+    font-variation-settings: "opsz" 32;
+  }
+
+  /* Scrollbar personalizada */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  /* Componentes customizados para o sistema */
+  
+  .metric-card {
+    @apply bg-gradient-to-br from-background to-muted/50 border border-border/50 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .metric-card-brand {
+    @apply bg-gradient-brand text-white;
+  }
+
+  .metric-card-success {
+    @apply bg-gradient-success text-white;
+  }
+
+  .metric-card-warning {
+    @apply bg-gradient-warning text-white;
+  }
+
+  .metric-card-danger {
+    @apply bg-gradient-danger text-white;
+  }
+
+  .data-table {
+    @apply w-full border-collapse bg-card text-card-foreground shadow-sm rounded-lg overflow-hidden;
+  }
+
+  .data-table th {
+    @apply border-b border-border bg-muted/50 px-4 py-3 text-left align-middle font-medium text-muted-foreground text-sm;
+  }
+
+  .data-table td {
+    @apply border-b border-border px-4 py-3 align-middle text-sm;
+  }
+
+  .data-table tr:hover {
+    @apply bg-muted/50;
+  }
+
+  .status-badge-active {
+    @apply inline-flex items-center rounded-full bg-success-100 px-2.5 py-0.5 text-xs font-medium text-success-800;
+  }
+
+  .status-badge-inactive {
+    @apply inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground;
+  }
+
+  .status-badge-pending {
+    @apply inline-flex items-center rounded-full bg-warning-100 px-2.5 py-0.5 text-xs font-medium text-warning-800;
+  }
+
+  .status-badge-error {
+    @apply inline-flex items-center rounded-full bg-danger-100 px-2.5 py-0.5 text-xs font-medium text-danger-800;
+  }
+
+  .loading-skeleton {
+    @apply animate-pulse bg-muted rounded;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-label {
+    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+  }
+
+  .form-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .form-error {
+    @apply text-sm font-medium text-destructive;
+  }
+
+  /* Estados de foco aprimorados */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* Transições suaves */
+  .smooth-transition {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  /* Gradiente sutil para cards */
+  .card-gradient {
+    @apply bg-gradient-to-br from-background via-background to-muted/20;
+  }
+
+  /* Efeito hover para botões */
+  .button-hover {
+    @apply transform hover:scale-[1.02] active:scale-[0.98] transition-transform duration-150;
+  }
+
+  /* Layout responsivo para métricas */
+  .metrics-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+  }
+
+  /* Estilo para inputs monetários */
+  .currency-input {
+    @apply text-right tabular-nums;
+  }
+
+  /* Indicador de status em tempo real */
+  .realtime-indicator {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium text-success-600;
+  }
+
+  .realtime-indicator::before {
+    @apply content-[''] w-2 h-2 bg-success-500 rounded-full animate-pulse-soft;
+  }
+}
+
+@layer utilities {
+  /* Utilitários personalizados */
+  
+  .text-gradient-brand {
+    @apply bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-success {
+    @apply bg-gradient-to-r from-success-600 to-success-500 bg-clip-text text-transparent;
+  }
+
+  /* Helpers para truncamento de texto */
+  .truncate-2 {
+    @apply overflow-hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .truncate-3 {
+    @apply overflow-hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+
+  /* Helpers para espacamento */
+  .content-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .page-header {
+    @apply space-y-1 pb-6 border-b border-border;
+  }
+
+  .page-content {
+    @apply pt-6 space-y-6;
+  }
+
+  /* Helpers para z-index */
+  .z-dropdown {
+    z-index: 1000;
+  }
+
+  .z-sticky {
+    z-index: 1020;
+  }
+
+  .z-fixed {
+    z-index: 1030;
+  }
+
+  .z-modal {
+    z-index: 1040;
+  }
+
+  .z-popover {
+    z-index: 1050;
+  }
+
+  .z-tooltip {
+    z-index: 1060;
+  }
+}
+
+/* Impressão - estilos para relatórios */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    @apply text-black bg-white;
+  }
+  
+  .metric-card, .data-table {
+    @apply shadow-none border border-gray-300;
+  }
+}
+
+/* Acessibilidade - modo de alto contraste */
+@media (prefers-contrast: high) {
+  .metric-card {
+    @apply border-2 border-foreground;
+  }
+  
+  .status-badge-active {
+    @apply bg-green-200 text-green-900 border border-green-900;
+  }
+  
+  .status-badge-pending {
+    @apply bg-yellow-200 text-yellow-900 border border-yellow-900;
+  }
+  
+  .status-badge-error {
+    @apply bg-red-200 text-red-900 border border-red-900;
+  }
+}
+
+/* Animações reduzidas para usuários que preferem menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Foco visível para navegação por teclado */
+@media (prefers-reduced-motion: no-preference) {
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring transition-all duration-150;
   }
 }
