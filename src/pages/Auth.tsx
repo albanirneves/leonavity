@@ -112,7 +112,7 @@ export default function Auth() {
           <div className="mx-auto w-16 h-16 bg-gradient-brand rounded-2xl flex items-center justify-center mb-4" aria-hidden>
             <span className="text-2xl font-bold text-white">LV</span>
           </div>
-          <h1 className="text-3xl font-bold text-gradient-brand">Autenticação</h1>
+          <h1 className="text-3xl font-bold text-gradient-brand">Leona Vity Admin</h1>
           <p className="text-muted-foreground">{Description}</p>
         </header>
 
