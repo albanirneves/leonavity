@@ -26,13 +26,13 @@ export const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <SidebarProvider collapsedWidth={56}>
+    <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-fixed">
+          <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
             <div className="h-full flex items-center justify-between px-6">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="lg:hidden" />

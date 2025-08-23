@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,7 +126,10 @@ export default function Dashboard() {
         votesActive: votesActive?.reduce((sum, v) => sum + (Number(v.votes) || 0), 0) || 0,
         estimatedRevenue,
         topCandidates,
-        recentPayments: recentPayments || [],
+        recentPayments: recentPayments?.map(payment => ({
+          ...payment,
+          id: payment.id.toString()
+        })) || [],
         activeEvents: activeEvents?.length || 0,
         totalCandidates: totalCandidates?.length || 0,
       });

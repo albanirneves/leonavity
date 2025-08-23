@@ -75,9 +75,10 @@ const quickStatsItems = [
 ];
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const isCollapsed = state === "collapsed";
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && currentPath === '/') return true;
@@ -93,8 +94,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={collapsed ? "w-14" : "w-64"}
-      collapsible
+      className={isCollapsed ? "w-14" : "w-64"}
+      collapsible="icon"
     >
       {/* Trigger button inside sidebar for mini state */}
       <div className="p-2 border-b border-sidebar-border">
@@ -104,7 +105,7 @@ export function AppSidebar() {
       <SidebarContent className="gap-0">
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
             Navegação Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -115,10 +116,10 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       className={`${getNavClass(item.url)} transition-all duration-200 group`}
-                      title={collapsed ? item.title : undefined}
+                      title={isCollapsed ? item.title : undefined}
                     >
                       <item.icon className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                      {!collapsed && (
+                      {!isCollapsed && (
                         <div className="flex-1 min-w-0">
                           <span className="font-medium">{item.title}</span>
                           <p className="text-xs text-muted-foreground truncate">
@@ -135,7 +136,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Quick Stats - Only shown when expanded */}
-        {!collapsed && (
+        {!isCollapsed && (
           <SidebarGroup>
             <SidebarGroupLabel>Acesso Rápido</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -165,7 +166,7 @@ export function AppSidebar() {
 
         {/* System Info - Bottom */}
         <div className="mt-auto p-3 border-t border-sidebar-border">
-          {!collapsed ? (
+          {!isCollapsed ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Database className="h-3 w-3" />
