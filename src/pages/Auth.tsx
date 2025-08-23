@@ -27,6 +27,23 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // ALL hooks must be called before any conditional returns
+  const Title = useMemo(() => {
+    switch (mode) {
+      case 'reset': return 'Recuperar senha';
+      case 'update': return 'Definir nova senha';
+      default: return 'Fazer login';
+    }
+  }, [mode]);
+
+  const Description = useMemo(() => {
+    switch (mode) {
+      case 'reset': return 'Digite seu email para receber as instruções';
+      case 'update': return 'Escolha sua nova senha para continuar';
+      default: return 'Entre com seu email e senha';
+    }
+  }, [mode]);
+
   useEffect(() => {
     // SEO
     document.title = 'Autenticação | Leona Vity Eventos';
@@ -52,30 +69,6 @@ export default function Auth() {
     }
   }, [user, authLoading, isRecovery, navigate, location.state]);
 
-  // Show loading while auth is being determined
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
-        <div className="text-center space-y-4">
-          <LoadingSpinner size="lg" />
-          <p className="text-muted-foreground">Verificando autenticação...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render the form if user is authenticated and should be redirected
-  if (user && !isRecovery) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
-        <div className="text-center space-y-4">
-          <LoadingSpinner size="lg" />
-          <p className="text-muted-foreground">Redirecionando...</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -87,7 +80,6 @@ export default function Auth() {
         }
         await signIn(email, password);
       }
-
 
       if (mode === 'reset') {
         if (!email) {
@@ -115,21 +107,29 @@ export default function Auth() {
     }
   };
 
-  const Title = useMemo(() => {
-    switch (mode) {
-      case 'reset': return 'Recuperar senha';
-      case 'update': return 'Definir nova senha';
-      default: return 'Fazer login';
-    }
-  }, [mode]);
+  // Now handle conditional rendering AFTER all hooks are called
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const Description = useMemo(() => {
-    switch (mode) {
-      case 'reset': return 'Digite seu email para receber as instruções';
-      case 'update': return 'Escolha sua nova senha para continuar';
-      default: return 'Entre com seu email e senha';
-    }
-  }, [mode]);
+  // Don't render the form if user is authenticated and should be redirected
+  if (user && !isRecovery) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground">Redirecionando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
