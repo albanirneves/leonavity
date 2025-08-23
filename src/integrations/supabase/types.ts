@@ -49,6 +49,7 @@ export type Database = {
           id_category: number
           id_event: number
           name: string
+          name_complete: string | null
         }
         Insert: {
           created_at?: string
@@ -57,6 +58,7 @@ export type Database = {
           id_category: number
           id_event: number
           name: string
+          name_complete?: string | null
         }
         Update: {
           created_at?: string
@@ -65,6 +67,7 @@ export type Database = {
           id_category?: number
           id_event?: number
           name?: string
+          name_complete?: string | null
         }
         Relationships: [
           {
