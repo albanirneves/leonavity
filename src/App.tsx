@@ -8,6 +8,7 @@ import { AuthProvider } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Layout } from "@/components/Layout";
 import Login from "@/pages/Login";
+import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import Accounts from "@/pages/Accounts";
 import Settings from "@/pages/Settings";
@@ -34,8 +35,8 @@ const App = () => {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
+              <Route path="/login" element={<Navigate to="/auth" replace />} />
+              <Route path="/auth" element={<Auth />} />
               
               {/* Protected Routes */}
               <Route
