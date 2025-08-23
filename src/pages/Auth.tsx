@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CustomButton } from '@/components/ui/button-variants';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, UserPlus, KeyRound, Check } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Auth() {
@@ -18,7 +18,7 @@ export default function Auth() {
   const urlParams = new URLSearchParams(location.search);
   const isRecovery = urlParams.get('type') === 'recovery';
 
-  type Mode = 'login' | 'signup' | 'reset' | 'update';
+  type Mode = 'login' | 'reset' | 'update';
   const [mode, setMode] = useState<Mode>(isRecovery ? 'update' : 'login');
 
   const [email, setEmail] = useState('');
@@ -62,17 +62,6 @@ export default function Auth() {
         await signIn(email, password);
       }
 
-      if (mode === 'signup') {
-        if (!email || !password) {
-          toast({ variant: 'destructive', title: 'Campos obrigatórios', description: 'Informe email e senha.' });
-          return;
-        }
-        if (password !== confirmPassword) {
-          toast({ variant: 'destructive', title: 'Senhas não conferem', description: 'Digite a mesma senha nos dois campos.' });
-          return;
-        }
-        await signUp(email, password);
-      }
 
       if (mode === 'reset') {
         if (!email) {
@@ -102,7 +91,6 @@ export default function Auth() {
 
   const Title = useMemo(() => {
     switch (mode) {
-      case 'signup': return 'Criar conta';
       case 'reset': return 'Recuperar senha';
       case 'update': return 'Definir nova senha';
       default: return 'Fazer login';
@@ -111,7 +99,6 @@ export default function Auth() {
 
   const Description = useMemo(() => {
     switch (mode) {
-      case 'signup': return 'Cadastre-se para acessar o sistema';
       case 'reset': return 'Digite seu email para receber as instruções';
       case 'update': return 'Escolha sua nova senha para continuar';
       default: return 'Entre com seu email e senha';
@@ -141,7 +128,7 @@ export default function Auth() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
-                {(mode === 'login' || mode === 'signup' || mode === 'reset') && (
+                {(mode === 'login' || mode === 'reset') && (
                   <div className="form-group">
                     <Label htmlFor="email" className="form-label">Email</Label>
                     <div className="relative">
@@ -160,7 +147,7 @@ export default function Auth() {
                   </div>
                 )}
 
-                {(mode === 'login' || mode === 'signup' || mode === 'update') && (
+                {(mode === 'login' || mode === 'update') && (
                   <div className="form-group">
                     <Label htmlFor="password" className="form-label">Senha</Label>
                     <div className="relative">
@@ -188,7 +175,7 @@ export default function Auth() {
                   </div>
                 )}
 
-                {(mode === 'signup' || mode === 'update') && (
+                {(mode === 'update') && (
                   <div className="form-group">
                     <Label htmlFor="confirm" className="form-label">Confirmar senha</Label>
                     <Input
@@ -209,14 +196,12 @@ export default function Auth() {
                     <>
                       <LoadingSpinner size="sm" variant="white" />
                       {mode === 'login' && 'Entrando...'}
-                      {mode === 'signup' && 'Criando conta...'}
                       {mode === 'reset' && 'Enviando...'}
                       {mode === 'update' && 'Atualizando...'}
                     </>
                   ) : (
                     <>
                       {mode === 'login' && <><span>Entrar</span><ArrowRight className="h-4 w-4" /></>}
-                      {mode === 'signup' && <><span>Criar conta</span><UserPlus className="h-4 w-4" /></>}
                       {mode === 'reset' && <><span>Enviar instruções</span><Mail className="h-4 w-4" /></>}
                       {mode === 'update' && <><span>Salvar nova senha</span><Check className="h-4 w-4" /></>}
                     </>
@@ -232,16 +217,6 @@ export default function Auth() {
                       disabled={isLoading}
                     >
                       Já tenho conta
-                    </button>
-                  )}
-                  {mode !== 'signup' && !isRecovery && (
-                    <button
-                      type="button"
-                      onClick={() => setMode('signup')}
-                      className="text-sm text-primary underline-offset-4 hover:underline"
-                      disabled={isLoading}
-                    >
-                      Criar conta
                     </button>
                   )}
                   {mode !== 'reset' && !isRecovery && (
