@@ -213,7 +213,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="container mx-auto px-6 py-6 space-y-6 animate-fade-in">
       {/* Page Header */}
       <div className="page-header">
         <div className="flex items-center justify-between">
