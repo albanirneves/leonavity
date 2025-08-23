@@ -94,7 +94,7 @@ export default function Accounts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.marketplace || !formData.access_token) {
+    if (!formData.name || !formData.marketplace || !formData.access_token || !formData.evolution_instance) {
       toast({
         variant: "destructive",
         title: "Campos obrigatórios",
@@ -227,7 +227,7 @@ export default function Accounts() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="container mx-auto px-6 py-6 space-y-6 animate-fade-in">
       {/* Page Header */}
       <div className="page-header">
         <div className="flex items-center justify-between">
@@ -269,75 +269,72 @@ export default function Accounts() {
                 </DialogDescription>
               </DialogHeader>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="form-group">
-                  <Label htmlFor="name" className="form-label">
-                    Nome da Conta *
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder="Ex: Conta Principal"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="focus-ring"
-                    required
-                  />
-                </div>
+               <form onSubmit={handleSubmit} className="space-y-6">
+                 <div className="space-y-2">
+                   <Label htmlFor="name" className="text-sm font-medium">
+                     Nome da Conta *
+                   </Label>
+                   <Input
+                     id="name"
+                     placeholder="Ex: Conta Principal"
+                     value={formData.name}
+                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                     className="w-full"
+                     required
+                   />
+                 </div>
 
-                <div className="form-group">
-                  <Label htmlFor="marketplace" className="form-label">
-                    Marketplace *
-                  </Label>
-                  <Select 
-                    value={formData.marketplace} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, marketplace: value }))}
-                  >
-                    <SelectTrigger className="focus-ring">
-                      <SelectValue placeholder="Selecione o marketplace" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mercadopago">Mercado Pago</SelectItem>
-                      <SelectItem value="pagseguro">PagSeguro</SelectItem>
-                      <SelectItem value="stripe">Stripe</SelectItem>
-                      <SelectItem value="paypal">PayPal</SelectItem>
-                      <SelectItem value="outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="marketplace" className="text-sm font-medium">
+                     Marketplace *
+                   </Label>
+                   <Select 
+                     value={formData.marketplace} 
+                     onValueChange={(value) => setFormData(prev => ({ ...prev, marketplace: value }))}
+                   >
+                     <SelectTrigger className="w-full">
+                       <SelectValue placeholder="Selecione o marketplace" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="MERCADO_PAGO">Mercado Pago</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
 
-                <div className="form-group">
-                  <Label htmlFor="access_token" className="form-label">
-                    Token de Acesso *
-                  </Label>
-                  <Input
-                    id="access_token"
-                    type="password"
-                    placeholder="Token de acesso da API"
-                    value={formData.access_token}
-                    onChange={(e) => setFormData(prev => ({ ...prev, access_token: e.target.value }))}
-                    className="focus-ring"
-                    required
-                  />
-                  <p className="form-description">
-                    Token para autenticação na API do marketplace
-                  </p>
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="access_token" className="text-sm font-medium">
+                     Token de Acesso *
+                   </Label>
+                   <Input
+                     id="access_token"
+                     type="password"
+                     placeholder="Token de acesso da API"
+                     value={formData.access_token}
+                     onChange={(e) => setFormData(prev => ({ ...prev, access_token: e.target.value }))}
+                     className="w-full"
+                     required
+                   />
+                   <p className="text-xs text-muted-foreground">
+                     Token para autenticação na API do marketplace
+                   </p>
+                 </div>
 
-                <div className="form-group">
-                  <Label htmlFor="evolution_instance" className="form-label">
-                    Instância Evolution
-                  </Label>
-                  <Input
-                    id="evolution_instance"
-                    placeholder="Instância do WhatsApp (opcional)"
-                    value={formData.evolution_instance}
-                    onChange={(e) => setFormData(prev => ({ ...prev, evolution_instance: e.target.value }))}
-                    className="focus-ring"
-                  />
-                  <p className="form-description">
-                    Instância para integração com WhatsApp (opcional)
-                  </p>
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="evolution_instance" className="text-sm font-medium">
+                     Instância Evolution *
+                   </Label>
+                   <Input
+                     id="evolution_instance"
+                     placeholder="Instância do WhatsApp"
+                     value={formData.evolution_instance}
+                     onChange={(e) => setFormData(prev => ({ ...prev, evolution_instance: e.target.value }))}
+                     className="w-full"
+                     required
+                   />
+                   <p className="text-xs text-muted-foreground">
+                     Instância para integração com WhatsApp (obrigatória)
+                   </p>
+                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
                   <CustomButton 
