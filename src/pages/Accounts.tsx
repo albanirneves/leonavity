@@ -426,7 +426,7 @@ export default function Accounts() {
               </CardHeader>
               
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">
                       Token de Acesso
@@ -449,16 +449,6 @@ export default function Accounts() {
                       >
                         <Copy className="h-4 w-4" />
                       </CustomButton>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Data de Criação
-                    </Label>
-                    <div className="flex items-center gap-2 mt-1 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {formatDate(account.created_at)}
                     </div>
                   </div>
                 </div>
