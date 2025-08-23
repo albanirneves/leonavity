@@ -10,6 +10,8 @@ import { Layout } from "@/components/Layout";
 import Login from "@/pages/Login";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
+import Events from "@/pages/Events";
+import Candidates from "@/pages/Candidates";
 import Accounts from "@/pages/Accounts";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
@@ -50,6 +52,8 @@ const App = () => {
                 {/* Redirect root to dashboard */}
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
+                <Route path="events" element={<Events />} />
+                <Route path="candidates" element={<Candidates />} />
                 <Route path="accounts" element={<Accounts />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

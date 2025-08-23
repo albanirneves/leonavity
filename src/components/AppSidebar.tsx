@@ -2,7 +2,8 @@
 import { 
   BarChart3, 
   Calendar, 
-  CreditCard
+  CreditCard,
+  Users
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -31,6 +32,12 @@ const navigationItems = [
     url: "/events", 
     icon: Calendar,
     description: "Gerenciar eventos de votação"
+  },
+  { 
+    title: "Candidatas", 
+    url: "/candidates", 
+    icon: Users,
+    description: "Gerenciar candidatas"
   },
   { 
     title: "Contas", 
