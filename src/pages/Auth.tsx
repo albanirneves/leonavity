@@ -44,8 +44,8 @@ export default function Auth() {
     if (isRecovery) setMode('update');
   }, [isRecovery]);
 
-  // Redirect if already authenticated
-  if (user && !authLoading && mode !== 'update') {
+  // Redirect if already authenticated (except for password recovery)
+  if (user && !authLoading && !isRecovery) {
     const from = (location.state as any)?.from?.pathname || '/dashboard';
     return <Navigate to={from} replace />;
   }
