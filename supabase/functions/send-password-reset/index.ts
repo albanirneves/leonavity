@@ -84,6 +84,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Reset link generated successfully');
 
+    // Ensure redirect_to points to production domain regardless of project Site URL
+    let actionLink = resetData.properties?.action_link as string | undefined;
+    try {
+      if (actionLink) {
+        const url = new URL(actionLink);
+        const params = new URLSearchParams(url.search);
+        params.set('redirect_to', 'https://leonavity.lovable.app/auth?type=recovery');
+        url.search = params.toString();
+        actionLink = url.toString();
+      }
+    } catch (e) {
+      console.warn('Failed to adjust redirect_to, using original action link', e);
+    }
+
     // Send email with Resend
     const emailResponse = await resend.emails.send({
       from: "Leona Vity <noreply@zappet.com.br>",
@@ -104,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetData.properties?.action_link}" 
+              <a href="${actionLink ?? resetData.properties?.action_link}" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; 
                         text-decoration: none; 
