@@ -67,7 +67,7 @@ export default function Auth() {
       const from = (location.state as any)?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     }
-  }, [user, authLoading, isRecovery, navigate, location.state]);
+  }, [user, authLoading, isRecovery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
