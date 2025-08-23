@@ -154,14 +154,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const resetPassword = async (email: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/auth?type=recovery`;
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl });
+      const { error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email }
+      });
+
       if (error) {
-        let msg = 'Erro ao enviar email de recuperação';
-        if (error.message.includes('User not found')) msg = 'Email não encontrado';
-        toast({ variant: 'destructive', title: 'Falha na recuperação', description: msg });
+        console.error('Password reset function error:', error);
+        toast({ variant: 'destructive', title: 'Erro ao enviar email', description: 'Tente novamente mais tarde.' });
       } else {
-        toast({ title: 'Email enviado', description: 'Verifique sua caixa de entrada.' });
+        toast({ title: 'Email enviado', description: 'Se o email existir, você receberá as instruções.' });
       }
       return { error };
     } catch (error) {
