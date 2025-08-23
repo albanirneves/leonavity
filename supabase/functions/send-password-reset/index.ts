@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${new URL(req.url).origin}/auth?type=recovery`
+        redirectTo: 'https://leonavity.lovable.app/auth?type=recovery'
       }
     });
 
