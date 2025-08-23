@@ -86,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email with Resend
     const emailResponse = await resend.emails.send({
-      from: "Leona Vity Eventos <onboarding@resend.dev>",
+      from: "Leona Vity <noreply@zappet.com.br>",
       to: [email],
       subject: "Recuperação de Senha - Leona Vity Eventos",
       html: `
