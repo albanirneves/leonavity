@@ -114,31 +114,37 @@ export type Database = {
       events: {
         Row: {
           active: boolean
+          card_tax: number | null
           created_at: string
           end_vote: string
           id: number
           id_account: number
           name: string
+          pix_tax: number | null
           start_vote: string
           vote_value: number
         }
         Insert: {
           active?: boolean
+          card_tax?: number | null
           created_at?: string
           end_vote: string
           id?: number
           id_account: number
           name: string
+          pix_tax?: number | null
           start_vote: string
           vote_value: number
         }
         Update: {
           active?: boolean
+          card_tax?: number | null
           created_at?: string
           end_vote?: string
           id?: number
           id_account?: number
           name?: string
+          pix_tax?: number | null
           start_vote?: string
           vote_value?: number
         }
@@ -152,11 +158,56 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       votes: {
         Row: {
           candidates_sent: boolean
           categories_sent: boolean
-          change_method_sent: boolean
+          change_method_sent: number
           changed_to_card: boolean
           confirm_sent: boolean
           continue_pix: boolean
@@ -181,7 +232,7 @@ export type Database = {
         Insert: {
           candidates_sent?: boolean
           categories_sent?: boolean
-          change_method_sent?: boolean
+          change_method_sent?: number
           changed_to_card?: boolean
           confirm_sent?: boolean
           continue_pix?: boolean
@@ -206,7 +257,7 @@ export type Database = {
         Update: {
           candidates_sent?: boolean
           categories_sent?: boolean
-          change_method_sent?: boolean
+          change_method_sent?: number
           changed_to_card?: boolean
           confirm_sent?: boolean
           continue_pix?: boolean
@@ -254,6 +305,13 @@ export type Database = {
       halfvec_typmod_in: {
         Args: { "": unknown[] }
         Returns: number
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       hnsw_bit_support: {
         Args: { "": unknown }
@@ -329,7 +387,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -456,6 +514,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
