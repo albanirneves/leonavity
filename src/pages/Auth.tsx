@@ -44,7 +44,7 @@ export default function Auth() {
     if (isRecovery) setMode('update');
   }, [isRecovery]);
 
-  // Early redirect to prevent render loops
+  // Redirect if already authenticated (except for password recovery)
   useEffect(() => {
     if (user && !authLoading && !isRecovery) {
       const from = (location.state as any)?.from?.pathname || '/dashboard';
@@ -52,9 +52,28 @@ export default function Auth() {
     }
   }, [user, authLoading, isRecovery, navigate, location.state]);
 
-  // Prevent rendering if redirect should happen
-  if (user && !authLoading && !isRecovery) {
-    return null;
+  // Show loading while auth is being determined
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render the form if user is authenticated and should be redirected
+  if (user && !isRecovery) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground">Redirecionando...</p>
+        </div>
+      </div>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
