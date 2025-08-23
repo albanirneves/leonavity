@@ -32,9 +32,8 @@ export const Layout = ({ children }: LayoutProps) => {
         
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="h-16 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40">
-            <div className="h-full flex items-center justify-between px-6">
-              <SidebarTrigger className="lg:hidden" />
+          <header className="h-16 border-b border-border bg-background/95 backdrop-blur-sm">
+            <div className="h-full flex items-center justify-end px-6">
               {/* User Menu */}
               <div className="flex items-center gap-3">
                 <div className="inline-flex items-center gap-1.5 text-xs font-medium text-accent">
