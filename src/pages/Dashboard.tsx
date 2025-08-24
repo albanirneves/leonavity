@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CustomButton } from '@/components/ui/button-variants';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { 
@@ -13,15 +14,22 @@ import {
   Calendar,
   Trophy,
   Activity,
-  RefreshCw
+  RefreshCw,
+  Search
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface Event {
+  id: number;
+  name: string;
+  start_vote: string;
+}
+
 interface DashboardStats {
-  votesToday: number;
   votesActive: number;
-  estimatedRevenue: number;
+  grossRevenue: number;
+  netRevenue: number;
   topCandidates: Array<{
     name: string;
     votes: number;
@@ -36,19 +44,19 @@ interface DashboardStats {
     created_at: string;
     votes: number;
   }>;
-  activeEvents: number;
   totalCandidates: number;
 }
 
 export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<string>('');
   const [stats, setStats] = useState<DashboardStats>({
-    votesToday: 0,
     votesActive: 0,
-    estimatedRevenue: 0,
+    grossRevenue: 0,
+    netRevenue: 0,
     topCandidates: [],
     recentPayments: [],
-    activeEvents: 0,
     totalCandidates: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -57,81 +65,137 @@ export default function Dashboard() {
 
   const activeTab = searchParams.get('tab') || 'overview';
 
+  const fetchEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, name, start_vote')
+        .order('start_vote', { ascending: false });
+      
+      if (error) throw error;
+      
+      setEvents(data || []);
+      // Auto-select the first event if none is selected
+      if (data && data.length > 0 && !selectedEvent) {
+        setSelectedEvent(data[0].id.toString());
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar eventos",
+        description: "Não foi possível carregar a lista de eventos.",
+      });
+    }
+  };
+
   const fetchDashboardData = async () => {
+    if (!selectedEvent) return;
+    
     try {
       setLoading(true);
+      const eventId = parseInt(selectedEvent);
       
-      // Buscar votos de hoje
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const { data: votesToday } = await supabase
+      // 1. Buscar votos ativos (approved) do evento selecionado
+      const { data: activeVotes, error: votesError } = await supabase
         .from('votes')
-        .select('id')
-        .gte('created_at', today.toISOString());
-
-      // Buscar eventos ativos
-      const now = new Date().toISOString();
-      const { data: activeEvents } = await supabase
-        .from('events')
-        .select('id, vote_value')
-        .eq('active', true)
-        .lte('start_vote', now)
-        .gte('end_vote', now);
-
-      // Buscar votos no período ativo
-      const { data: votesActive } = await supabase
-        .from('votes')
-        .select('votes, id_event')
-        .in('id_event', activeEvents?.map(e => e.id) || []);
-
-      // Buscar faturamento estimado (votos aprovados)
-      const { data: approvedVotes } = await supabase
-        .from('votes')
-        .select('votes, id_event')
+        .select('*')
+        .eq('id_event', eventId)
         .eq('payment_status', 'approved');
 
-      // Calcular faturamento
-      let estimatedRevenue = 0;
-      if (approvedVotes && activeEvents) {
-        approvedVotes.forEach(vote => {
-          const event = activeEvents.find(e => e.id === vote.id_event);
-          if (event && vote.votes) {
-            estimatedRevenue += Number(vote.votes) * Number(event.vote_value);
+      if (votesError) throw votesError;
+
+      const votesActiveCount = activeVotes?.length || 0;
+
+      // 2. Buscar dados do evento para calcular faturamento
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('vote_value, card_tax, pix_tax')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError) throw eventError;
+
+      // 3. Calcular faturamento bruto e líquido
+      let grossRevenue = 0;
+      let netRevenue = 0;
+
+      if (activeVotes && eventData) {
+        activeVotes.forEach(vote => {
+          const voteValue = Number(eventData.vote_value);
+          const votes = Number(vote.votes) || 0;
+          const baseAmount = voteValue * votes;
+          
+          grossRevenue += baseAmount;
+          
+          // Calcular líquido baseado no método de pagamento
+          if (vote.changed_to_card) {
+            const cardTax = Number(eventData.card_tax) || 0;
+            netRevenue += baseAmount * (100 - cardTax) / 100;
+          } else {
+            const pixTax = Number(eventData.pix_tax) || 0;
+            netRevenue += baseAmount * (100 - pixTax) / 100;
           }
         });
       }
 
-      // Buscar top candidatas (mock data por enquanto)
-      const topCandidates = [
-        { name: "Ana Silva", votes: 245, event: "Miss 2024", category: "Geral" },
-        { name: "Maria Santos", votes: 198, event: "Miss 2024", category: "Geral" },
-        { name: "Julia Costa", votes: 167, event: "Miss 2024", category: "Geral" },
-      ];
+      // 4. Buscar top candidatas do evento
+      const { data: candidatesData, error: candidatesError } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('id_event', eventId);
 
-      // Buscar pagamentos recentes
+      if (candidatesError) throw candidatesError;
+
+      // Calcular votos por candidata
+      const candidatesWithVotes = await Promise.all(
+        (candidatesData || []).map(async (candidate) => {
+          const { data: votesData } = await supabase
+            .from('votes')
+            .select('votes')
+            .eq('id_event', candidate.id_event)
+            .eq('id_category', candidate.id_category)
+            .eq('id_candidate', candidate.id_candidate)
+            .eq('payment_status', 'approved');
+
+          const totalVotes = votesData?.reduce((sum, vote) => sum + (Number(vote.votes) || 0), 0) || 0;
+
+          return {
+            name: candidate.name,
+            votes: totalVotes,
+            event: 'Evento Atual',
+            category: `Categoria ${candidate.id_category}`
+          };
+        })
+      );
+
+      // Ordenar por votos e pegar top 5
+      const topCandidates = candidatesWithVotes
+        .sort((a, b) => b.votes - a.votes)
+        .slice(0, 5);
+
+      // 5. Buscar pagamentos recentes do evento
       const { data: recentPayments } = await supabase
         .from('votes')
         .select('id, payment_id, payment_status, payment_status_detail, created_at, votes')
+        .eq('id_event', eventId)
         .not('payment_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(10);
 
-      // Buscar total de candidatas
-      const { data: totalCandidates } = await supabase
-        .from('candidates')
-        .select('id');
+      // 6. Buscar total de candidatas do evento
+      const totalCandidates = candidatesData?.length || 0;
 
       setStats({
-        votesToday: votesToday?.length || 0,
-        votesActive: votesActive?.reduce((sum, v) => sum + (Number(v.votes) || 0), 0) || 0,
-        estimatedRevenue,
+        votesActive: votesActiveCount,
+        grossRevenue,
+        netRevenue,
         topCandidates,
         recentPayments: recentPayments?.map(payment => ({
           ...payment,
           id: payment.id.toString()
         })) || [],
-        activeEvents: activeEvents?.length || 0,
-        totalCandidates: totalCandidates?.length || 0,
+        totalCandidates,
       });
 
       setLastUpdate(new Date());
@@ -148,7 +212,17 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    if (selectedEvent) {
+      fetchDashboardData();
+    }
+  }, [selectedEvent]);
+
+  useEffect(() => {
+    if (!selectedEvent) return;
 
     // Set up realtime subscription for votes
     const channel = supabase
@@ -174,7 +248,7 @@ export default function Dashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [selectedEvent, toast]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -248,70 +322,93 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Metrics Cards */}
-      <div className="metrics-grid">
-        <Card className="metric-card-brand">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/90">
-              Votos Hoje
-            </CardTitle>
-            <Vote className="h-4 w-4 text-white/80" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.votesToday}</div>
-            <p className="text-xs text-white/70">
-              Votos recebidos nas últimas 24h
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="metric-card-success">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/90">
-              Votos Ativos
-            </CardTitle>
-            <Activity className="h-4 w-4 text-white/80" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.votesActive}</div>
-            <p className="text-xs text-white/70">
-              Em eventos em andamento
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="metric-card-warning">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/90">
-              Faturamento
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-white/80" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {formatCurrency(stats.estimatedRevenue)}
-            </div>
-            <p className="text-xs text-white/70">
-              Receita estimada aprovada
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="metric-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Eventos Ativos
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeEvents}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.totalCandidates} candidatas cadastradas
-            </p>
-          </CardContent>
-        </Card>
+      {/* Event Selection */}
+      <div className="flex items-center gap-4 bg-card p-4 rounded-lg border">
+        <Search className="h-5 w-5 text-muted-foreground" />
+        <div className="flex-1">
+          <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+            <SelectTrigger className="w-full max-w-md">
+              <SelectValue placeholder="Selecione um evento para visualizar" />
+            </SelectTrigger>
+            <SelectContent>
+              {events.map((event) => (
+                <SelectItem key={event.id} value={event.id.toString()}>
+                  {event.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {/* Metrics Cards */}
+      {selectedEvent && (
+        <div className="metrics-grid">
+          <Card className="metric-card-success">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white/90">
+                Votos Ativos
+              </CardTitle>
+              <Activity className="h-4 w-4 text-white/80" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.votesActive}</div>
+              <p className="text-xs text-white/70">
+                Votos aprovados no evento
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="metric-card-warning">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white/90">
+                Faturamento Bruto
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-white/80" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">
+                {formatCurrency(stats.grossRevenue)}
+              </div>
+              <p className="text-xs text-white/70">
+                Receita total sem descontos
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="metric-card-brand">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white/90">
+                Faturamento Líquido
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-white/80" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">
+                {formatCurrency(stats.netRevenue)}
+              </div>
+              <p className="text-xs text-white/70">
+                Receita após taxas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="metric-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Candidatas
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCandidates}</div>
+              <p className="text-xs text-muted-foreground">
+                Cadastradas no evento
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Detailed Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
