@@ -30,6 +30,7 @@ interface Category {
   id: number;
   name: string;
   id_category: number;
+  id_event: number;
 }
 
 interface CandidateWithDetails extends Candidate {
@@ -56,6 +57,14 @@ export default function Candidates() {
   const { toast } = useToast();
 
   const [newCandidateForm, setNewCandidateForm] = useState({
+    name: '',
+    name_complete: '',
+    id_event: '',
+    id_category: '',
+    id_candidate: ''
+  });
+
+  const [editCandidateForm, setEditCandidateForm] = useState({
     name: '',
     name_complete: '',
     id_event: '',
@@ -101,7 +110,7 @@ export default function Candidates() {
   const fetchCategories = async (eventId: number) => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id, name, id_category')
+      .select('id, name, id_category, id_event')
       .eq('id_event', eventId)
       .order('id_category');
     
@@ -198,6 +207,15 @@ export default function Candidates() {
 
   const openCandidateModal = (candidate: CandidateWithDetails) => {
     setSelectedCandidate(candidate);
+    setEditCandidateForm({
+      name: candidate.name,
+      name_complete: candidate.name_complete || '',
+      id_event: candidate.id_event.toString(),
+      id_category: candidate.id_category.toString(),
+      id_candidate: candidate.id_candidate.toString()
+    });
+    // Load categories for the selected event
+    fetchCategories(candidate.id_event);
     setIsModalOpen(true);
   };
 
@@ -358,6 +376,58 @@ export default function Candidates() {
     
     setIsDeleteDialogOpen(false);
     setCandidateToDelete(null);
+  };
+
+  const handleEditCandidate = async () => {
+    if (!selectedCandidate || !editCandidateForm.name || !editCandidateForm.id_event || !editCandidateForm.id_category || !editCandidateForm.id_candidate) {
+      toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios', variant: 'destructive' });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const { error } = await supabase
+        .from('candidates')
+        .update({
+          name: editCandidateForm.name,
+          name_complete: editCandidateForm.name_complete || null,
+          id_event: parseInt(editCandidateForm.id_event),
+          id_category: parseInt(editCandidateForm.id_category),
+          id_candidate: parseInt(editCandidateForm.id_candidate)
+        })
+        .eq('id', selectedCandidate.id);
+
+      if (error) throw error;
+
+      // If there's a photo selected, upload it
+      if (selectedPhoto) {
+        const fileName = `event_${editCandidateForm.id_event}_category_${editCandidateForm.id_category}_candidate_${editCandidateForm.id_candidate}`;
+        const fileExt = 'jpg';
+        const filePath = `${fileName}.${fileExt}`;
+
+        const jpegBlob = await convertToJpeg(selectedPhoto);
+
+        const { error: uploadError } = await supabase.storage
+          .from('candidates')
+          .upload(filePath, jpegBlob, { upsert: true, contentType: 'image/jpeg' });
+
+        if (uploadError) {
+          console.error('Error uploading photo:', uploadError);
+          // Don't throw error here, just log it since candidate was updated successfully
+        }
+      }
+
+      toast({ title: 'Sucesso', description: 'Candidata atualizada com sucesso' });
+      setIsModalOpen(false);
+      setSelectedPhoto(null);
+      setPhotoPreview(null);
+      fetchCandidates();
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Erro ao atualizar candidata', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -646,30 +716,74 @@ export default function Candidates() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label>Nome</Label>
-                    <p className="font-medium">{selectedCandidate.name}</p>
+                    <Label htmlFor="edit-name">Nome *</Label>
+                    <Input
+                      id="edit-name"
+                      type="text"
+                      value={editCandidateForm.name}
+                      onChange={(e) => setEditCandidateForm({...editCandidateForm, name: e.target.value})}
+                      placeholder="Digite o nome da candidata"
+                      required
+                    />
                   </div>
                   
-                  {selectedCandidate.name_complete && (
+                  <div>
+                    <Label htmlFor="edit-name-complete">Nome Completo</Label>
+                    <Input
+                      id="edit-name-complete"
+                      type="text"
+                      value={editCandidateForm.name_complete}
+                      onChange={(e) => setEditCandidateForm({...editCandidateForm, name_complete: e.target.value})}
+                      placeholder="Digite o nome completo (opcional)"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-event">Evento *</Label>
+                    <Select value={editCandidateForm.id_event} onValueChange={(value) => setEditCandidateForm({...editCandidateForm, id_event: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um evento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {events.map((event) => (
+                          <SelectItem key={event.id} value={event.id.toString()}>
+                            {event.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {editCandidateForm.id_event && (
                     <div>
-                      <Label>Nome Completo</Label>
-                      <p className="font-medium">{selectedCandidate.name_complete}</p>
+                      <Label htmlFor="edit-category">Categoria *</Label>
+                      <Select value={editCandidateForm.id_category} onValueChange={(value) => setEditCandidateForm({...editCandidateForm, id_category: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories
+                            .filter(cat => cat.id_event === parseInt(editCandidateForm.id_event))
+                            .map((category) => (
+                            <SelectItem key={category.id} value={category.id_category.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                   
                   <div>
-                    <Label>Evento</Label>
-                    <p className="font-medium">{selectedCandidate.event_name}</p>
-                  </div>
-                  
-                  <div>
-                    <Label>Categoria</Label>
-                    <p className="font-medium">{selectedCandidate.category_name}</p>
-                  </div>
-                  
-                  <div>
-                    <Label>ID da Candidata</Label>
-                    <p className="font-medium">{selectedCandidate.id_candidate}</p>
+                    <Label htmlFor="edit-id-candidate">ID da Candidata *</Label>
+                    <Input
+                      id="edit-id-candidate"
+                      type="number"
+                      value={editCandidateForm.id_candidate}
+                      onChange={(e) => setEditCandidateForm({...editCandidateForm, id_candidate: e.target.value})}
+                      placeholder="Digite o ID da candidata"
+                      required
+                    />
                   </div>
                   
                   <div>
@@ -680,7 +794,7 @@ export default function Candidates() {
                 
                 <div className="space-y-4">
                   <div>
-                    <Label>Foto de Perfil</Label>
+                    <Label>Foto Atual</Label>
                     <div className="mt-2">
                       {selectedCandidate.photo_url ? (
                         <img 
@@ -696,35 +810,76 @@ export default function Candidates() {
                     </div>
                   </div>
                   
-                   <div>
-                     <Label htmlFor="photo-upload">Enviar Nova Foto</Label>
-                     <div className="mt-2">
-                       <input
-                         id="photo-upload"
-                         type="file"
-                         accept="image/*"
-                         onChange={handlePhotoUpload}
-                         disabled={uploading}
-                         className="hidden"
-                       />
-                       <Button
-                         type="button"
-                         variant="outline"
-                         onClick={() => document.getElementById('photo-upload')?.click()}
-                         disabled={uploading}
-                         className="w-full"
-                       >
-                         <Camera className="h-4 w-4 mr-2" />
-                         {uploading ? 'Enviando...' : 'Selecionar Foto'}
-                       </Button>
-                       {uploading && (
-                         <p className="text-sm text-muted-foreground mt-1">
-                           Enviando foto...
-                         </p>
-                       )}
-                     </div>
-                   </div>
+                  <div>
+                    <Label htmlFor="edit-photo-upload">Nova Foto</Label>
+                    <div className="mt-2">
+                      {photoPreview ? (
+                        <div className="space-y-2">
+                          <img 
+                            src={photoPreview} 
+                            alt="Preview" 
+                            className="w-full h-64 object-cover rounded-lg"
+                          />
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedPhoto(null);
+                              setPhotoPreview(null);
+                            }}
+                            className="w-full"
+                          >
+                            Remover Foto
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
+                          <span className="text-muted-foreground">Nenhuma foto selecionada</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <input
+                      id="edit-photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoSelect}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('edit-photo-upload')?.click()}
+                      disabled={uploading}
+                      className="w-full"
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      Selecionar Foto
+                    </Button>
+                  </div>
                 </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setSelectedPhoto(null);
+                    setPhotoPreview(null);
+                  }}
+                  disabled={uploading}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleEditCandidate}
+                  disabled={uploading}
+                >
+                  {uploading ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
               </div>
             </>
           )}
