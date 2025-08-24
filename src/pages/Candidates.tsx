@@ -202,6 +202,9 @@ export default function Candidates() {
       );
     }
     
+    // Sort alphabetically by name
+    filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
+    
     setFilteredCandidates(filtered);
   };
 
@@ -690,7 +693,7 @@ export default function Candidates() {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">{candidate.name}</CardTitle>
+                  <CardTitle className="text-lg">#{candidate.id_candidate} - {candidate.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {candidate.event_name} - {candidate.category_name}
                   </p>
@@ -724,11 +727,6 @@ export default function Candidates() {
                 <Users className="h-4 w-4" />
                 <span>{candidate.votes_count} votos</span>
               </div>
-              {candidate.name_complete && (
-                <p className="text-sm mt-2">
-                  <strong>Nome completo:</strong> {candidate.name_complete}
-                </p>
-              )}
             </CardContent>
           </Card>
         ))}
