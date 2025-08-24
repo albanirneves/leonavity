@@ -201,6 +201,37 @@ export default function Candidates() {
     setIsModalOpen(true);
   };
 
+  // Convert any selected image to JPEG without changing dimensions
+  const convertToJpeg = async (file: File): Promise<Blob> => {
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = dataUrl;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas context not available');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Falha ao converter imagem'));
+      }, 'image/jpeg', 0.92);
+    });
+  };
+
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !selectedCandidate) return;
     
@@ -214,9 +245,11 @@ export default function Candidates() {
       const fileExt = 'jpg';
       const filePath = `${fileName}.${fileExt}`;
 
+      const jpegBlob = await convertToJpeg(file);
+
       const { error: uploadError } = await supabase.storage
         .from('candidates')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, jpegBlob, { upsert: true, contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
@@ -272,9 +305,11 @@ export default function Candidates() {
         const fileExt = 'jpg';
         const filePath = `${fileName}.${fileExt}`;
 
+        const jpegBlob = await convertToJpeg(selectedPhoto);
+
         const { error: uploadError } = await supabase.storage
           .from('candidates')
-          .upload(filePath, selectedPhoto, { upsert: true });
+          .upload(filePath, jpegBlob, { upsert: true, contentType: 'image/jpeg' });
 
         if (uploadError) {
           console.error('Error uploading photo:', uploadError);
@@ -515,9 +550,6 @@ export default function Candidates() {
                         <Camera className="h-4 w-4 mr-2" />
                         Selecionar Foto
                       </Button>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        A foto será salva automaticamente com o nome baseado nos IDs selecionados
-                      </p>
                     </div>
                   </div>
                 </div>
