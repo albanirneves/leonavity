@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Users, Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { Upload, Users, Search, Plus, Edit, Trash2, Camera } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface Candidate {
@@ -49,6 +50,8 @@ export default function Candidates() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [candidateToDelete, setCandidateToDelete] = useState<CandidateWithDetails | null>(null);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
@@ -299,12 +302,17 @@ export default function Candidates() {
   };
 
   const handleDeleteCandidate = async (candidate: CandidateWithDetails) => {
-    if (!confirm('Tem certeza que deseja excluir esta candidata?')) return;
+    setCandidateToDelete(candidate);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteCandidate = async () => {
+    if (!candidateToDelete) return;
 
     const { error } = await supabase
       .from('candidates')
       .delete()
-      .eq('id', candidate.id);
+      .eq('id', candidateToDelete.id);
 
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao excluir candidata', variant: 'destructive' });
@@ -312,6 +320,9 @@ export default function Candidates() {
       toast({ title: 'Sucesso', description: 'Candidata excluída com sucesso' });
       fetchCandidates();
     }
+    
+    setIsDeleteDialogOpen(false);
+    setCandidateToDelete(null);
   };
 
   const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -486,13 +497,24 @@ export default function Candidates() {
                   <div>
                     <Label htmlFor="candidate-photo-upload">Selecionar Foto</Label>
                     <div className="mt-2">
-                      <Input
+                      <input
                         id="candidate-photo-upload"
                         type="file"
                         accept="image/*"
                         onChange={handlePhotoSelect}
                         disabled={uploading}
+                        className="hidden"
                       />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('candidate-photo-upload')?.click()}
+                        disabled={uploading}
+                        className="w-full"
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Selecionar Foto
+                      </Button>
                       <p className="text-sm text-muted-foreground mt-1">
                         A foto será salva automaticamente com o nome baseado nos IDs selecionados
                       </p>
@@ -642,29 +664,59 @@ export default function Candidates() {
                     </div>
                   </div>
                   
-                  <div>
-                    <Label htmlFor="photo-upload">Enviar Nova Foto</Label>
-                    <div className="mt-2">
-                      <Input
-                        id="photo-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        disabled={uploading}
-                      />
-                      {uploading && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Enviando foto...
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                   <div>
+                     <Label htmlFor="photo-upload">Enviar Nova Foto</Label>
+                     <div className="mt-2">
+                       <input
+                         id="photo-upload"
+                         type="file"
+                         accept="image/*"
+                         onChange={handlePhotoUpload}
+                         disabled={uploading}
+                         className="hidden"
+                       />
+                       <Button
+                         type="button"
+                         variant="outline"
+                         onClick={() => document.getElementById('photo-upload')?.click()}
+                         disabled={uploading}
+                         className="w-full"
+                       >
+                         <Camera className="h-4 w-4 mr-2" />
+                         {uploading ? 'Enviando...' : 'Selecionar Foto'}
+                       </Button>
+                       {uploading && (
+                         <p className="text-sm text-muted-foreground mt-1">
+                           Enviando foto...
+                         </p>
+                       )}
+                     </div>
+                   </div>
                 </div>
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a candidata "{candidateToDelete?.name}"? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCandidate} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   Calendar,
   Trash2
 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -52,6 +53,8 @@ export default function Accounts() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showTokenInForm, setShowTokenInForm] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
   const { toast } = useToast();
 
   // Form state
@@ -175,15 +178,18 @@ export default function Accounts() {
   };
 
   const handleDelete = async (account: Account) => {
-    if (!confirm(`Tem certeza que deseja excluir a conta "${account.name}"?`)) {
-      return;
-    }
+    setAccountToDelete(account);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!accountToDelete) return;
 
     try {
       const { error } = await supabase
         .from('accounts')
         .delete()
-        .eq('id', account.id);
+        .eq('id', accountToDelete.id);
 
       if (error) throw error;
 
@@ -201,6 +207,9 @@ export default function Accounts() {
         description: "Não foi possível excluir a conta. Tente novamente.",
       });
     }
+    
+    setIsDeleteDialogOpen(false);
+    setAccountToDelete(null);
   };
 
   const handleCopyToken = async (token: string) => {
@@ -513,6 +522,25 @@ export default function Accounts() {
           ))
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a conta "{accountToDelete?.name}"? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

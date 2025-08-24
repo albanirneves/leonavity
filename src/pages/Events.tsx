@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Settings, Search, Edit, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -52,6 +53,8 @@ export default function Events() {
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
   const [isCategoriesDialogOpen, setIsCategoriesDialogOpen] = useState(false);
   const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
+  const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [editCategoryName, setEditCategoryName] = useState('');
   const { toast } = useToast();
@@ -249,12 +252,17 @@ export default function Events() {
   };
 
   const handleDeleteCategory = async (category: Category) => {
-    if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
+    setCategoryToDelete(category);
+    setIsDeleteCategoryDialogOpen(true);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
 
     const { error } = await supabase
       .from('categories')
       .delete()
-      .eq('id', category.id);
+      .eq('id', categoryToDelete.id);
 
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao excluir categoria', variant: 'destructive' });
@@ -262,6 +270,9 @@ export default function Events() {
       toast({ title: 'Sucesso', description: 'Categoria excluída com sucesso' });
       if (selectedEvent) fetchCategories(selectedEvent);
     }
+    
+    setIsDeleteCategoryDialogOpen(false);
+    setCategoryToDelete(null);
   };
 
   const openCategoriesModal = (eventId: number) => {
@@ -685,6 +696,25 @@ export default function Events() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Category Confirmation Dialog */}
+      <AlertDialog open={isDeleteCategoryDialogOpen} onOpenChange={setIsDeleteCategoryDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a categoria "{categoryToDelete?.name}"? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCategory} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
