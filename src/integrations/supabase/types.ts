@@ -371,6 +371,15 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: unknown
       }
+      log_auth_attempt: {
+        Args: {
+          _attempt_type: string
+          _email: string
+          _ip_address: unknown
+          _success: boolean
+        }
+        Returns: undefined
+      }
       require_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -386,6 +395,10 @@ export type Database = {
       sparsevec_typmod_in: {
         Args: { "": unknown[] }
         Returns: number
+      }
+      track_user_session: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       vector_avg: {
         Args: { "": number[] }
