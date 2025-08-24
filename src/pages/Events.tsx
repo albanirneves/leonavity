@@ -585,10 +585,10 @@ export default function Events() {
           <Card key={event.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => openEditEventModal(event)}>
             <CardHeader>
               <div className="flex justify-between items-start">
-                <div>
+                <div className="space-y-2">
                   <CardTitle>{event.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Votação: {new Date(event.start_vote + 'T00:00:00').toLocaleDateString('pt-BR')} - {new Date(event.end_vote + 'T00:00:00').toLocaleDateString('pt-BR')}
+                    Votação: {new Date(event.start_vote).toLocaleDateString('pt-BR')} - {new Date(event.end_vote).toLocaleDateString('pt-BR')}
                   </p>
                   <p className="text-sm">
                     Valor do voto: R$ {event.vote_value}
