@@ -46,7 +46,7 @@ export default function Candidates() {
   const [filteredCandidates, setFilteredCandidates] = useState<CandidateWithDetails[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<string>('all');
+  const [selectedEvent, setSelectedEvent] = useState<string>('');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithDetails | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,7 +85,7 @@ export default function Candidates() {
   }, []);
 
   useEffect(() => {
-    if (selectedEvent && selectedEvent !== 'all') {
+    if (selectedEvent && selectedEvent !== '') {
       fetchCategories(parseInt(selectedEvent));
     }
   }, [selectedEvent]);
@@ -97,13 +97,17 @@ export default function Candidates() {
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('events')
-      .select('id, name')
-      .order('name');
+      .select('id, name, start_vote')
+      .order('start_vote', { ascending: true }); // Order by start date
     
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao carregar eventos', variant: 'destructive' });
     } else {
       setEvents(data || []);
+      // Auto-select the first event if none is selected or if "all" was selected
+      if (data && data.length > 0 && (selectedEvent === 'all' || !selectedEvent)) {
+        setSelectedEvent(data[0].id.toString());
+      }
     }
   };
 
@@ -191,7 +195,8 @@ export default function Candidates() {
   const applyFilters = () => {
     let filtered = candidates;
     
-    if (selectedEvent !== 'all') {
+    // Always filter by selected event (no "all" option)
+    if (selectedEvent && selectedEvent !== '') {
       filtered = filtered.filter(c => c.id_event === parseInt(selectedEvent));
     }
     
@@ -564,10 +569,9 @@ export default function Candidates() {
 
           <Select value={selectedEvent} onValueChange={setSelectedEvent}>
             <SelectTrigger className="w-64">
-              <SelectValue placeholder="Filtrar por evento" />
+              <SelectValue placeholder="Selecione um evento" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os eventos</SelectItem>
               {events.map((event) => (
                 <SelectItem key={event.id} value={event.id.toString()}>
                   {event.name}
