@@ -273,12 +273,12 @@ export default function Accounts() {
   }
 
   return (
-    <div className="container mx-auto px-6 py-6 space-y-6 animate-fade-in">
+    <div className="container mx-auto px-4 md:px-6 py-4 md:py-6 space-y-6 animate-fade-in max-w-full overflow-hidden">
       {/* Page Header */}
       <div className="page-header">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gradient-brand">Contas de Pagamento</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gradient-brand">Contas de Pagamento</h1>
             <p className="text-muted-foreground">
               Gerencie as contas de pagamento dos eventos
             </p>
@@ -302,7 +302,7 @@ export default function Accounts() {
                 Nova Conta
               </CustomButton>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] mx-4 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingAccount ? 'Editar Conta' : 'Nova Conta de Pagamento'}

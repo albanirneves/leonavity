@@ -6,6 +6,8 @@ import {
   Users
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
   Sidebar,
@@ -49,10 +51,18 @@ const navigationItems = [
 
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpen } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
+  const isMobile = useIsMobile();
+
+  // Auto-close sidebar on mobile when navigating
+  useEffect(() => {
+    if (isMobile) {
+      setOpen(false);
+    }
+  }, [location.pathname, isMobile, setOpen]);
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && currentPath === '/') return true;
