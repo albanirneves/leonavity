@@ -207,8 +207,8 @@ export default function Candidates() {
       );
     }
     
-    // Sort alphabetically by name
-    filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort by number of votes (descending - most votes first)
+    filtered = filtered.sort((a, b) => b.votes_count - a.votes_count);
     
     setFilteredCandidates(filtered);
   };
