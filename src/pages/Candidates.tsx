@@ -408,38 +408,64 @@ export default function Candidates() {
 
       // If there's a photo selected, upload it
       if (selectedPhoto) {
+        console.log('📸 Starting photo upload process...');
+        console.log('Selected photo:', selectedPhoto);
+        
         const fileName = `event_${editCandidateForm.id_event}_category_${editCandidateForm.id_category}_candidate_${editCandidateForm.id_candidate}`;
         const fileExt = 'jpg';
         const filePath = `${fileName}.${fileExt}`;
+        
+        console.log('File path for upload:', filePath);
 
-        const jpegBlob = await convertToJpeg(selectedPhoto);
+        try {
+          const jpegBlob = await convertToJpeg(selectedPhoto);
+          console.log('✅ JPEG conversion successful, blob size:', jpegBlob.size);
 
-        // Remove old file first to ensure fresh upload
-        await supabase.storage
-          .from('candidates')
-          .remove([filePath]);
-
-        const { error: uploadError } = await supabase.storage
-          .from('candidates')
-          .upload(filePath, jpegBlob, { contentType: 'image/jpeg' });
-
-        if (uploadError) {
-          console.error('Error uploading photo:', uploadError);
-          // Don't throw error here, just log it since candidate was updated successfully
-        } else {
-          // Force refresh the URL with timestamp to avoid cache
-          const { data: urlData } = await supabase.storage
+          // Remove old file first to ensure fresh upload
+          console.log('🗑️ Removing old file...');
+          const { error: removeError } = await supabase.storage
             .from('candidates')
-            .getPublicUrl(filePath);
+            .remove([filePath]);
           
-          const freshUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-          
-          // Update the selected candidate with the new photo URL
-          setSelectedCandidate(prev => prev ? {
-            ...prev,
-            photo_url: freshUrl
-          } : prev);
+          if (removeError) {
+            console.log('⚠️ Remove error (might not exist):', removeError);
+          } else {
+            console.log('✅ Old file removed or didn\'t exist');
+          }
+
+          console.log('⬆️ Uploading new file...');
+          const { error: uploadError, data: uploadData } = await supabase.storage
+            .from('candidates')
+            .upload(filePath, jpegBlob, { contentType: 'image/jpeg' });
+
+          if (uploadError) {
+            console.error('❌ Upload failed:', uploadError);
+            toast({ title: 'Erro', description: 'Erro ao fazer upload da foto', variant: 'destructive' });
+          } else {
+            console.log('✅ Upload successful:', uploadData);
+            
+            // Force refresh the URL with timestamp to avoid cache
+            const { data: urlData } = await supabase.storage
+              .from('candidates')
+              .getPublicUrl(filePath);
+            
+            const freshUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+            console.log('🔗 New photo URL:', freshUrl);
+            
+            // Update the selected candidate with the new photo URL
+            setSelectedCandidate(prev => prev ? {
+              ...prev,
+              photo_url: freshUrl
+            } : prev);
+            
+            console.log('✅ Photo upload and update complete!');
+          }
+        } catch (conversionError) {
+          console.error('❌ JPEG conversion failed:', conversionError);
+          toast({ title: 'Erro', description: 'Erro ao processar imagem', variant: 'destructive' });
         }
+      } else {
+        console.log('ℹ️ No photo selected for upload');
       }
 
       toast({ title: 'Sucesso', description: 'Candidata atualizada com sucesso' });
