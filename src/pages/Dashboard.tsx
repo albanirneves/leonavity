@@ -19,6 +19,8 @@ import {
 import { 
   LineChart, 
   Line, 
+  BarChart,
+  Bar,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -61,6 +63,15 @@ interface DashboardStats {
     date: string;
     votes: number;
   }>;
+  categoryRankings: Array<{
+    categoryName: string;
+    candidates: Array<{
+      name: string;
+      votes: number;
+      photo_url?: string;
+      id_candidate: number;
+    }>;
+  }>;
 }
 
 export default function Dashboard() {
@@ -76,6 +87,7 @@ export default function Dashboard() {
     totalCandidates: 0,
     revenueChart: [],
     votesChart: [],
+    categoryRankings: [],
   });
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -261,6 +273,56 @@ export default function Dashboard() {
         });
       }
 
+      // 8. Buscar ranking por categoria
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('id_category, name')
+        .eq('id_event', eventId);
+
+      const categoryRankings = await Promise.all(
+        (categoriesData || []).map(async (category) => {
+          const { data: categoryCandiates } = await supabase
+            .from('candidates')
+            .select('id_candidate, name')
+            .eq('id_event', eventId)
+            .eq('id_category', category.id_category);
+
+          const candidatesWithVotes = await Promise.all(
+            (categoryCandiates || []).map(async (candidate) => {
+              const { data: votesData } = await supabase
+                .from('votes')
+                .select('votes')
+                .eq('id_event', eventId)
+                .eq('id_category', category.id_category)
+                .eq('id_candidate', candidate.id_candidate)
+                .eq('payment_status', 'approved');
+
+              const totalVotes = votesData?.reduce((sum, vote) => sum + (Number(vote.votes) || 0), 0) || 0;
+
+              // Generate photo URL from storage
+              const photo_url = `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/${candidate.id_candidate}.jpg`;
+
+              return {
+                name: candidate.name,
+                votes: totalVotes,
+                photo_url,
+                id_candidate: candidate.id_candidate
+              };
+            })
+          );
+
+          // Sort by votes and take top 5
+          const topCandidates = candidatesWithVotes
+            .sort((a, b) => b.votes - a.votes)
+            .slice(0, 5);
+
+          return {
+            categoryName: category.name,
+            candidates: topCandidates
+          };
+        })
+      );
+
       setStats({
         votesActive: votesActiveCount,
         grossRevenue,
@@ -273,6 +335,7 @@ export default function Dashboard() {
         totalCandidates,
         revenueChart,
         votesChart,
+        categoryRankings: categoryRankings.filter(cat => cat.candidates.length > 0),
       });
 
       setLastUpdate(new Date());
@@ -611,7 +674,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={stats.votesChart}>
+                    <BarChart data={stats.votesChart}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis 
                         dataKey="date" 
@@ -622,19 +685,64 @@ export default function Dashboard() {
                         labelFormatter={(date) => new Date(date).toLocaleDateString('pt-BR')}
                         formatter={(value) => [value, 'Votos']}
                       />
-                      <Line 
-                        type="monotone" 
+                      <Bar 
                         dataKey="votes" 
-                        stroke="hsl(var(--success))" 
-                        strokeWidth={2}
-                        dot={{ fill: 'hsl(var(--success))' }}
+                        fill="hsl(var(--success))" 
+                        radius={[4, 4, 0, 0]}
                       />
-                    </LineChart>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Category Rankings */}
+          {stats.categoryRankings.length > 0 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold">Ranking por Categoria</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {stats.categoryRankings.map((category, categoryIndex) => (
+                  <Card key={categoryIndex}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Trophy className="h-5 w-5" />
+                        {category.categoryName}
+                      </CardTitle>
+                      <CardDescription>
+                        Top 5 candidatas mais votadas
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {category.candidates.map((candidate, index) => (
+                          <div key={candidate.id_candidate} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                            <div className="w-6 h-6 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-xs">
+                              {index + 1}
+                            </div>
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                              <img 
+                                src={candidate.photo_url} 
+                                alt={candidate.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://via.placeholder.com/40x40/ccc/666?text=?';
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{candidate.name}</p>
+                              <p className="text-sm text-muted-foreground">{candidate.votes} votos</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
