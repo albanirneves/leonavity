@@ -727,7 +727,7 @@ export default function Dashboard() {
                                 alt={candidate.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  e.currentTarget.src = 'https://via.placeholder.com/40x40/ccc/666?text=?';
+                                  e.currentTarget.src = '/placeholder.svg';
                                 }}
                               />
                             </div>

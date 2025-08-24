@@ -121,14 +121,12 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-async function centerCropTo(photo: Image, w: number, h: number): Promise<Image> {
-  const scale = Math.max(w / photo.width, h / photo.height);
-  const newW = Math.ceil(photo.width * scale);
-  const newH = Math.ceil(photo.height * scale);
-  const resized = photo.resize(newW, newH);
-  const x = Math.floor((newW - w) / 2);
-  const y = Math.floor((newH - h) / 2);
-  return resized.crop(x, y, w, h);
+async function centerCropToSquare(photo: Image, size: number): Promise<Image> {
+  const minDim = Math.min(photo.width, photo.height);
+  const x = Math.floor((photo.width - minDim) / 2);
+  const y = Math.floor((photo.height - minDim) / 2);
+  const square = photo.crop(x, y, minDim, minDim);
+  return square.resize(size, size);
 }
 
 async function placeholder(w: number, h: number, text: string, font: Uint8Array, color: number) {
@@ -139,9 +137,21 @@ async function placeholder(w: number, h: number, text: string, font: Uint8Array,
   return img;
 }
 
+// CORS headers for web invocation
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    if (req.method !== "POST") return new Response("Use POST", { status: 405 });
+    if (req.method !== "POST") return new Response("Use POST", { status: 405, headers: corsHeaders });
 
     const body = (await req.json()) as Payload;
     const {
@@ -157,10 +167,10 @@ Deno.serve(async (req) => {
       bgColor = "#ffffff",
       textColor = "#111111",
       jpegQuality = 85,
-    } = body;;
+    } = body;
 
     if (!event_id || !category_id) {
-      return new Response("Missing event_id or category_id", { status: 400 });
+      return new Response("Missing event_id or category_id", { status: 400, headers: corsHeaders });
     }
 
     // bucket & naming
@@ -195,7 +205,7 @@ Deno.serve(async (req) => {
       candidates = (data ?? []) as Candidate[];
     }
     if (!candidates.length) {
-      return new Response("No candidates found", { status: 404 });
+      return new Response("No candidates found", { status: 404, headers: corsHeaders });
     }
 
     const font = await loadFont();
@@ -221,12 +231,12 @@ Deno.serve(async (req) => {
         canvas.composite(titleImg, tx, ty);
       }
 
-      // grid metrics
+      // grid metrics - force square photos
       const availableH = outH - headerH - margin * 2 - gap * (rows - 1);
       const availableW = outW - margin * 2 - gap * (cols - 1);
       const tileW = Math.floor(availableW / cols);
       const tileH = Math.floor(availableH / rows);
-      const photoH = tileH - captionH;
+      const photoSize = Math.min(tileW, tileH - captionH);
 
       for (let i = 0; i < page.length; i++) {
         const cand = page[i];
@@ -248,17 +258,18 @@ Deno.serve(async (req) => {
 
         let photo: Image;
         if (img) {
-          photo = await centerCropTo(img, tileW, photoH);
+          photo = await centerCropToSquare(img, photoSize);
         } else {
-          photo = await placeholder(tileW, photoH, "Sem foto", font, textRGBA);
+          photo = await placeholder(photoSize, photoSize, "Sem foto", font, textRGBA);
         }
-        canvas.composite(photo, x, y);
+        const photoX = x + Math.floor((tileW - photoSize) / 2);
+        canvas.composite(photo, photoX, y);
 
         // caption: "ID — Name"
         const caption = `${String(cand.id_candidate).padStart(2, "0")} — ${cand.name ?? ""}`;
         const textImg = await Image.renderText(font, 28, caption, textRGBA);
         const tx = x + Math.floor((tileW - textImg.width) / 2);
-        const ty = y + photoH + Math.floor((captionH - textImg.height) / 2);
+        const ty = y + photoSize + Math.floor((captionH - textImg.height) / 2);
         canvas.composite(textImg, tx, ty);
       }
 
@@ -276,12 +287,12 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ ok: true, title, pages: outputs }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
 });
