@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   Image,
   ImageFont,
-} from "https://deno.land/x/imagescript@1.2.14/mod.ts";
+} from "https://esm.sh/imagescript@1.3.0?target=deno";
 
 /** CORS */
 const corsHeaders = {
