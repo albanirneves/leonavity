@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CustomButton } from '@/components/ui/button-variants';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -17,6 +16,15 @@ import {
   RefreshCw,
   Search
 } from 'lucide-react';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,13 +46,21 @@ interface DashboardStats {
   }>;
   recentPayments: Array<{
     id: string;
-    payment_id: string;
+    phone: string;
     payment_status: string;
     payment_status_detail: string;
     created_at: string;
     votes: number;
   }>;
   totalCandidates: number;
+  revenueChart: Array<{
+    date: string;
+    revenue: number;
+  }>;
+  votesChart: Array<{
+    date: string;
+    votes: number;
+  }>;
 }
 
 export default function Dashboard() {
@@ -58,6 +74,8 @@ export default function Dashboard() {
     topCandidates: [],
     recentPayments: [],
     totalCandidates: 0,
+    revenueChart: [],
+    votesChart: [],
   });
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -177,7 +195,7 @@ export default function Dashboard() {
       // 5. Buscar pagamentos recentes do evento
       const { data: recentPayments } = await supabase
         .from('votes')
-        .select('id, payment_id, payment_status, payment_status_detail, created_at, votes')
+        .select('id, phone, payment_status, payment_status_detail, created_at, votes')
         .eq('id_event', eventId)
         .not('payment_id', 'is', null)
         .order('created_at', { ascending: false })
@@ -185,6 +203,63 @@ export default function Dashboard() {
 
       // 6. Buscar total de candidatas do evento
       const totalCandidates = candidatesData?.length || 0;
+
+      // 7. Gerar dados para gráficos baseados nas datas do evento
+      const { data: currentEventData } = await supabase
+        .from('events')
+        .select('start_vote, end_vote')
+        .eq('id', eventId)
+        .single();
+
+      let revenueChart: Array<{date: string; revenue: number}> = [];
+      let votesChart: Array<{date: string; votes: number}> = [];
+
+      if (currentEventData && currentEventData.start_vote && currentEventData.end_vote) {
+        const startDate = new Date(currentEventData.start_vote);
+        const endDate = new Date(currentEventData.end_vote);
+        
+        // Gerar array de datas do evento
+        const dates: string[] = [];
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          dates.push(d.toISOString().split('T')[0]);
+        }
+
+        // Buscar dados de votos aprovados agrupados por data
+        const { data: dailyVotes } = await supabase
+          .from('votes')
+          .select('created_at, votes')
+          .eq('id_event', eventId)
+          .eq('payment_status', 'approved')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+
+        // Processar dados para os gráficos
+        revenueChart = dates.map(date => {
+          const dayVotes = dailyVotes?.filter(vote => 
+            vote.created_at.startsWith(date)
+          ) || [];
+          
+          const dayRevenue = dayVotes.reduce((sum, vote) => {
+            const voteValue = Number(eventData.vote_value);
+            const votes = Number(vote.votes) || 0;
+            return sum + (voteValue * votes);
+          }, 0);
+
+          return { date, revenue: dayRevenue };
+        });
+
+        votesChart = dates.map(date => {
+          const dayVotes = dailyVotes?.filter(vote => 
+            vote.created_at.startsWith(date)
+          ) || [];
+          
+          const totalVotes = dayVotes.reduce((sum, vote) => 
+            sum + (Number(vote.votes) || 0), 0
+          );
+
+          return { date, votes: totalVotes };
+        });
+      }
 
       setStats({
         votesActive: votesActiveCount,
@@ -196,6 +271,8 @@ export default function Dashboard() {
           id: payment.id.toString()
         })) || [],
         totalCandidates,
+        revenueChart,
+        votesChart,
       });
 
       setLastUpdate(new Date());
@@ -393,16 +470,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Detailed Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="votes">Votos</TabsTrigger>
-          <TabsTrigger value="ranking">Ranking</TabsTrigger>
-          <TabsTrigger value="revenue">Faturamento</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
+      {/* Content */}
+      {selectedEvent && (
+        <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Payments */}
             <Card>
@@ -425,7 +495,7 @@ export default function Dashboard() {
                     stats.recentPayments.slice(0, 5).map((payment) => (
                       <div key={payment.id} className="flex items-center justify-between border-b border-muted pb-2">
                         <div>
-                          <p className="font-medium">{payment.payment_id || 'N/A'}</p>
+                          <p className="font-medium">{payment.phone}</p>
                           <p className="text-sm text-muted-foreground">
                             {formatDate(payment.created_at)}
                           </p>
@@ -484,59 +554,89 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
 
-        <TabsContent value="votes" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Análise de Votos</CardTitle>
-              <CardDescription>
-                Detalhamento dos votos por período e status
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Gráficos e análises detalhadas serão implementados aqui</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Revenue Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Faturamento por Dia
+                </CardTitle>
+                <CardDescription>
+                  Receita diária durante o período do evento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={stats.revenueChart}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="date" 
+                        tickFormatter={(date) => new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      />
+                      <YAxis 
+                        tickFormatter={(value) => formatCurrency(value)}
+                      />
+                      <Tooltip 
+                        labelFormatter={(date) => new Date(date).toLocaleDateString('pt-BR')}
+                        formatter={(value) => [formatCurrency(Number(value)), 'Faturamento']}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="revenue" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(var(--primary))' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-        <TabsContent value="ranking" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ranking Completo</CardTitle>
-              <CardDescription>
-                Ranking detalhado por evento e categoria
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Ranking detalhado será implementado aqui</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="revenue" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Análise de Faturamento</CardTitle>
-              <CardDescription>
-                Receita detalhada por evento e período
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Análise de faturamento será implementada aqui</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            {/* Votes Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Vote className="h-5 w-5" />
+                  Votos por Dia
+                </CardTitle>
+                <CardDescription>
+                  Total de votos aprovados por dia
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={stats.votesChart}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="date" 
+                        tickFormatter={(date) => new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      />
+                      <YAxis />
+                      <Tooltip 
+                        labelFormatter={(date) => new Date(date).toLocaleDateString('pt-BR')}
+                        formatter={(value) => [value, 'Votos']}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="votes" 
+                        stroke="hsl(var(--success))" 
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(var(--success))' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
