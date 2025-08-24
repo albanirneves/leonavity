@@ -705,8 +705,8 @@ export default function Dashboard() {
                 {stats.categoryRankings.map((category, categoryIndex) => (
                   <Card key={categoryIndex}>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5" />
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Trophy className="h-4 w-4" />
                         {category.categoryName}
                       </CardTitle>
                       <CardDescription>
