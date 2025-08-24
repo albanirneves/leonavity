@@ -36,12 +36,27 @@ function getClient() {
   return createClient(url, key);
 }
 
-/** Font loader */
-async function loadFont(): Promise<Uint8Array> {
-  const url =
-    "https://raw.githubusercontent.com/google/fonts/main/apache/opensans/OpenSans-SemiBold.ttf";
-  const buf = await (await fetch(url)).arrayBuffer();
-  return new Uint8Array(buf);
+/** Public TTF font loader with fallback + in-memory cache */
+let FONT_CACHE: ImageFont | null = null;
+async function loadFont(): Promise<ImageFont> {
+  if (FONT_CACHE) return FONT_CACHE;
+  // Prefer a clássica e estável (não variável):
+  const FONT_URLS = [
+    "https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans.ttf",
+    "https://raw.githubusercontent.com/google/fonts/main/apache/opensans/OpenSans-SemiBold.ttf",
+    "https://raw.githubusercontent.com/google/fonts/main/ofl/nunito/static/Nunito-SemiBold.ttf"
+  ];
+  for (const url of FONT_URLS) {
+    try {
+      const res = await fetch(url, { redirect: "follow" });
+      if (!res.ok) continue;
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const font = await ImageFont.load(bytes);
+      FONT_CACHE = font;
+      return font;
+    } catch (_) { /* tenta próxima */ }
+  }
+  throw new Error("invalid font: none of the public TTFs could be loaded");
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
