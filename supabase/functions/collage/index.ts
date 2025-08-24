@@ -1,9 +1,5 @@
-// deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  Image,
-  ImageFont,
-} from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+import { Image, ImageFont } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 /** Utils */
 const hexToRgba = (hex: string, a = 0xff) =>
@@ -31,9 +27,14 @@ type Payload = {
   jpegQuality?: number;// default 85
 };
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+function getClient() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  }
+  return createClient(url, key);
+}
 
 /** Font loader */
 async function loadFont(): Promise<ImageFont> {
@@ -94,6 +95,9 @@ Deno.serve(async (req) => {
     // bucket & naming
     const bucket = "candidates";
     const prefix = `event_${event_id}_category_${category_id}`;
+
+    // init client (evita crash no boot se env faltar)
+    const supabase = getClient();
 
     // Fetch title from categories.name using composite key (event_id + category_id)
     const { data: cat, error: catErr } = await supabase
