@@ -70,6 +70,7 @@ export function AppSidebar() {
     <Sidebar
       className={isCollapsed ? "w-16" : "w-72"}
       collapsible="icon"
+      variant="sidebar"
     >
       <SidebarContent className="gap-0 p-4">
         {/* Logo area */}
@@ -85,7 +86,7 @@ export function AppSidebar() {
               </div>
             </>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto hidden md:block">
             <SidebarTrigger className="w-8 h-8" />
           </div>
         </div>
