@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Users } from 'lucide-react';
+import { Upload, Users, Search, Plus, Edit, Trash2 } from 'lucide-react';
 
 interface Candidate {
   id: number;
@@ -39,13 +39,24 @@ interface CandidateWithDetails extends Candidate {
 
 export default function Candidates() {
   const [candidates, setCandidates] = useState<CandidateWithDetails[]>([]);
+  const [filteredCandidates, setFilteredCandidates] = useState<CandidateWithDetails[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<string>('all');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithDetails | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
+
+  const [newCandidateForm, setNewCandidateForm] = useState({
+    name: '',
+    name_complete: '',
+    id_event: '',
+    id_category: '',
+    id_candidate: ''
+  });
 
   useEffect(() => {
     fetchEvents();
@@ -57,6 +68,10 @@ export default function Candidates() {
       fetchCategories(parseInt(selectedEvent));
     }
   }, [selectedEvent]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [candidates, selectedEvent, searchTerm]);
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -152,9 +167,22 @@ export default function Candidates() {
     }
   };
 
-  const filteredCandidates = selectedEvent === 'all' 
-    ? candidates 
-    : candidates.filter(c => c.id_event === parseInt(selectedEvent));
+  const applyFilters = () => {
+    let filtered = candidates;
+    
+    if (selectedEvent !== 'all') {
+      filtered = filtered.filter(c => c.id_event === parseInt(selectedEvent));
+    }
+    
+    if (searchTerm) {
+      filtered = filtered.filter(c => 
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.name_complete?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    setFilteredCandidates(filtered);
+  };
 
   const openCandidateModal = (candidate: CandidateWithDetails) => {
     setSelectedCandidate(candidate);
@@ -204,12 +232,70 @@ export default function Candidates() {
     }
   };
 
+  const handleCreateCandidate = async () => {
+    if (!newCandidateForm.name || !newCandidateForm.id_event || !newCandidateForm.id_category || !newCandidateForm.id_candidate) {
+      toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios', variant: 'destructive' });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('candidates')
+      .insert([{
+        name: newCandidateForm.name,
+        name_complete: newCandidateForm.name_complete || null,
+        id_event: parseInt(newCandidateForm.id_event),
+        id_category: parseInt(newCandidateForm.id_category),
+        id_candidate: parseInt(newCandidateForm.id_candidate)
+      }]);
+
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao criar candidata', variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: 'Candidata criada com sucesso' });
+      setIsAddModalOpen(false);
+      setNewCandidateForm({
+        name: '',
+        name_complete: '',
+        id_event: '',
+        id_category: '',
+        id_candidate: ''
+      });
+      fetchCandidates();
+    }
+  };
+
+  const handleDeleteCandidate = async (candidate: CandidateWithDetails) => {
+    if (!confirm('Tem certeza que deseja excluir esta candidata?')) return;
+
+    const { error } = await supabase
+      .from('candidates')
+      .delete()
+      .eq('id', candidate.id);
+
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao excluir candidata', variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: 'Candidata excluída com sucesso' });
+      fetchCandidates();
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Candidatas</h1>
         
         <div className="flex items-center gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar candidata..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-64"
+            />
+          </div>
+
           <Select value={selectedEvent} onValueChange={setSelectedEvent}>
             <SelectTrigger className="w-64">
               <SelectValue placeholder="Filtrar por evento" />
@@ -223,6 +309,93 @@ export default function Candidates() {
               ))}
             </SelectContent>
           </Select>
+
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Adicionar Candidata</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="new_event">Evento *</Label>
+                  <Select value={newCandidateForm.id_event} onValueChange={(value) => {
+                    setNewCandidateForm({ ...newCandidateForm, id_event: value, id_category: '' });
+                    if (value) fetchCategories(parseInt(value));
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecionar evento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {events.map((event) => (
+                        <SelectItem key={event.id} value={event.id.toString()}>
+                          {event.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="new_category">Categoria *</Label>
+                  <Select value={newCandidateForm.id_category} onValueChange={(value) => setNewCandidateForm({ ...newCandidateForm, id_category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecionar categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id_category.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="new_id_candidate">ID da Candidata *</Label>
+                  <Input
+                    id="new_id_candidate"
+                    type="number"
+                    value={newCandidateForm.id_candidate}
+                    onChange={(e) => setNewCandidateForm({ ...newCandidateForm, id_candidate: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="new_name">Nome de Exibição *</Label>
+                  <Input
+                    id="new_name"
+                    value={newCandidateForm.name}
+                    onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="new_name_complete">Nome Completo</Label>
+                  <Input
+                    id="new_name_complete"
+                    value={newCandidateForm.name_complete}
+                    onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name_complete: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleCreateCandidate}>
+                  Criar Candidata
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Candidata
+          </Button>
         </div>
       </div>
 
@@ -234,10 +407,36 @@ export default function Candidates() {
             onClick={() => openCandidateModal(candidate)}
           >
             <CardHeader>
-              <CardTitle className="text-lg">{candidate.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {candidate.event_name} - {candidate.category_name}
-              </p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-lg">{candidate.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {candidate.event_name} - {candidate.category_name}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openCandidateModal(candidate);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCandidate(candidate);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2 text-sm">

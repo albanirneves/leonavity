@@ -376,47 +376,50 @@ export default function Events() {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="vote_value">Valor do Voto *</Label>
-                  <Input
-                    id="vote_value"
-                    type="number"
-                    step="0.01"
-                    value={eventForm.vote_value}
-                    onChange={(e) => setEventForm({ ...eventForm, vote_value: e.target.value })}
-                  />
-                </div>
+            <div>
+              <Label htmlFor="vote_value">Valor do Voto *</Label>
+              <Input
+                id="vote_value"
+                placeholder="R$ 0,00"
+                value={eventForm.vote_value}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, '');
+                  value = (parseFloat(value) / 100).toFixed(2);
+                  if (value === 'NaN') value = '';
+                  setEventForm({ ...eventForm, vote_value: value });
+                }}
+              />
+            </div>
 
-                <div>
-                  <Label htmlFor="pix_tax">Taxa PIX</Label>
-                  <Input
-                    id="pix_tax"
-                    type="number"
-                    step="0.01"
-                    value={eventForm.pix_tax}
-                    onChange={(e) => setEventForm({ ...eventForm, pix_tax: e.target.value })}
-                  />
-                </div>
+            <div>
+              <Label htmlFor="pix_tax">Taxa PIX</Label>
+              <Input
+                id="pix_tax"
+                placeholder="R$ 0,00"
+                value={eventForm.pix_tax}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, '');
+                  value = (parseFloat(value) / 100).toFixed(2);
+                  if (value === 'NaN') value = '';
+                  setEventForm({ ...eventForm, pix_tax: value });
+                }}
+              />
+            </div>
 
-                <div>
-                  <Label htmlFor="card_tax">Taxa Cartão</Label>
-                  <Input
-                    id="card_tax"
-                    type="number"
-                    step="0.01"
-                    value={eventForm.card_tax}
-                    onChange={(e) => setEventForm({ ...eventForm, card_tax: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="active"
-                    checked={eventForm.active}
-                    onCheckedChange={(checked) => setEventForm({ ...eventForm, active: !!checked })}
-                  />
-                  <Label htmlFor="active">Evento Ativo</Label>
-                </div>
+            <div>
+              <Label htmlFor="card_tax">Taxa Cartão</Label>
+              <Input
+                id="card_tax"
+                placeholder="R$ 0,00"
+                value={eventForm.card_tax}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, '');
+                  value = (parseFloat(value) / 100).toFixed(2);
+                  if (value === 'NaN') value = '';
+                  setEventForm({ ...eventForm, card_tax: value });
+                }}
+              />
+            </div>
               </div>
               
               <div className="flex justify-end gap-2 mt-4">
@@ -488,10 +491,14 @@ export default function Events() {
               <Label htmlFor="edit_vote_value">Valor do Voto *</Label>
               <Input
                 id="edit_vote_value"
-                type="number"
-                step="0.01"
-                value={editEventForm.vote_value}
-                onChange={(e) => setEditEventForm({ ...editEventForm, vote_value: e.target.value })}
+                placeholder="R$ 0,00"
+                value={`R$ ${parseFloat(editEventForm.vote_value || '0').toFixed(2).replace('.', ',')}`}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, '');
+                  value = (parseFloat(value) / 100).toFixed(2);
+                  if (value === 'NaN') value = '';
+                  setEditEventForm({ ...editEventForm, vote_value: value });
+                }}
               />
             </div>
 
@@ -499,10 +506,14 @@ export default function Events() {
               <Label htmlFor="edit_pix_tax">Taxa PIX</Label>
               <Input
                 id="edit_pix_tax"
-                type="number"
-                step="0.01"
-                value={editEventForm.pix_tax}
-                onChange={(e) => setEditEventForm({ ...editEventForm, pix_tax: e.target.value })}
+                placeholder="R$ 0,00"
+                value={`R$ ${parseFloat(editEventForm.pix_tax || '0').toFixed(2).replace('.', ',')}`}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, '');
+                  value = (parseFloat(value) / 100).toFixed(2);
+                  if (value === 'NaN') value = '';
+                  setEditEventForm({ ...editEventForm, pix_tax: value });
+                }}
               />
             </div>
 
@@ -510,20 +521,15 @@ export default function Events() {
               <Label htmlFor="edit_card_tax">Taxa Cartão</Label>
               <Input
                 id="edit_card_tax"
-                type="number"
-                step="0.01"
-                value={editEventForm.card_tax}
-                onChange={(e) => setEditEventForm({ ...editEventForm, card_tax: e.target.value })}
+                placeholder="R$ 0,00"
+                value={`R$ ${parseFloat(editEventForm.card_tax || '0').toFixed(2).replace('.', ',')}`}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, '');
+                  value = (parseFloat(value) / 100).toFixed(2);
+                  if (value === 'NaN') value = '';
+                  setEditEventForm({ ...editEventForm, card_tax: value });
+                }}
               />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="edit_active"
-                checked={editEventForm.active}
-                onCheckedChange={(checked) => setEditEventForm({ ...editEventForm, active: !!checked })}
-              />
-              <Label htmlFor="edit_active">Evento Ativo</Label>
             </div>
           </div>
           
