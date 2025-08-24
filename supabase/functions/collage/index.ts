@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Image, ImageFont } from "https://deno.land/x/imagescript@1.2.16/mod.ts";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 /** Utils */
 const hexToRgba = (hex: string, a = 0xff) =>
@@ -37,11 +37,11 @@ function getClient() {
 }
 
 /** Font loader */
-async function loadFont(): Promise<ImageFont> {
+async function loadFont(): Promise<Uint8Array> {
   const url =
     "https://raw.githubusercontent.com/google/fonts/main/apache/opensans/OpenSans-SemiBold.ttf";
   const buf = await (await fetch(url)).arrayBuffer();
-  return await ImageFont.load(new Uint8Array(buf));
+  return new Uint8Array(buf);
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -60,7 +60,7 @@ async function centerCropTo(photo: Image, w: number, h: number): Promise<Image> 
   return resized.crop(x, y, w, h);
 }
 
-async function placeholder(w: number, h: number, text: string, font: ImageFont, color: number) {
+async function placeholder(w: number, h: number, text: string, font: Uint8Array, color: number) {
   const img = new Image(w, h);
   img.fill(hexToRgba("#eaeaea"));
   const t = await Image.renderText(font, 24, text, color);
