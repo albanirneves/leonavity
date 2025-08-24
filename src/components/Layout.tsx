@@ -37,7 +37,7 @@ export const Layout = ({ children }: LayoutProps) => {
               {/* Mobile Menu Button */}
               <div className="flex items-center gap-3">
                 <SidebarTrigger className="md:hidden" />
-                <h1 className="font-semibold text-lg hidden sm:block">Leona Vity</h1>
+                <h1 className="font-semibold text-lg hidden sm:block"></h1>
               </div>
               {/* User Menu */}
               <div className="flex items-center gap-3">
