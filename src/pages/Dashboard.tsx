@@ -299,8 +299,8 @@ export default function Dashboard() {
 
               const totalVotes = votesData?.reduce((sum, vote) => sum + (Number(vote.votes) || 0), 0) || 0;
 
-              // Generate photo URL from storage
-              const photo_url = `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/${candidate.id_candidate}.jpg`;
+              // Generate photo URL from storage with correct format
+              const photo_url = `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${category.id_category}_candidate_${candidate.id_candidate}.jpg`;
 
               return {
                 name: candidate.name,
