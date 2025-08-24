@@ -279,7 +279,29 @@ export type Database = {
           votes?: number | null
           votes_sent?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "votes_id_event_fkey"
+            columns: ["id_event"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votes_id_event_id_category_fkey"
+            columns: ["id_event", "id_category"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id_event", "id_category"]
+          },
+          {
+            foreignKeyName: "votes_id_event_id_category_id_candidate_fkey"
+            columns: ["id_event", "id_category", "id_candidate"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id_event", "id_category", "id_candidate"]
+          },
+        ]
       }
     }
     Views: {
