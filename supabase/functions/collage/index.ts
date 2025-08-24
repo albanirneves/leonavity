@@ -36,27 +36,52 @@ function getClient() {
   return createClient(url, key);
 }
 
-/** Public TTF font loader with fallback + in-memory cache */
-let FONT_CACHE: ImageFont | null = null;
-async function loadFont(): Promise<ImageFont> {
+/** Public TTF font loader with fallback + in-memory cache (returns raw bytes) */
+let FONT_CACHE: Uint8Array | null = null;
+async function loadFont(): Promise<Uint8Array> {
   if (FONT_CACHE) return FONT_CACHE;
-  // Prefer a clássica e estável (não variável):
+
+  // Use reliable CDNs first, then GitHub raw as last resort
   const FONT_URLS = [
+    // Nunito 600 via fontsource (unpkg)
+    "https://unpkg.com/@fontsource/nunito/files/nunito-latin-600-normal.ttf",
+    // Open Sans 600 via fontsource (unpkg)
+    "https://unpkg.com/@fontsource/open-sans/files/open-sans-latin-600-normal.ttf",
+    // DejaVu via jsdelivr
+    "https://cdn.jsdelivr.net/gh/dejavu-fonts/dejavu-fonts/ttf/DejaVuSans.ttf",
+    // Fallbacks (GitHub raw)
     "https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans.ttf",
     "https://raw.githubusercontent.com/google/fonts/main/apache/opensans/OpenSans-SemiBold.ttf",
-    "https://raw.githubusercontent.com/google/fonts/main/ofl/nunito/static/Nunito-SemiBold.ttf"
+    "https://raw.githubusercontent.com/google/fonts/main/ofl/nunito/static/Nunito-SemiBold.ttf",
   ];
-  for (const url of FONT_URLS) {
-    try {
-      const res = await fetch(url, { redirect: "follow" });
-      if (!res.ok) continue;
-      const bytes = new Uint8Array(await res.arrayBuffer());
-      const font = await ImageFont.load(bytes);
-      FONT_CACHE = font;
-      return font;
-    } catch (_) { /* tenta próxima */ }
+
+  const TIMEOUT_MS = 4000;
+  const fetchWithTimeout = (url: string) =>
+    new Promise<Uint8Array>(async (resolve, reject) => {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+      try {
+        const res = await fetch(url, { redirect: "follow", signal: ctrl.signal });
+        if (!res.ok) {
+          clearTimeout(timer);
+          return reject(new Error(`HTTP ${res.status}`));
+        }
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        clearTimeout(timer);
+        resolve(bytes);
+      } catch (e) {
+        clearTimeout(timer);
+        reject(e);
+      }
+    });
+
+  try {
+    const bytes = await Promise.any(FONT_URLS.map(fetchWithTimeout));
+    FONT_CACHE = bytes;
+    return bytes;
+  } catch {
+    throw new Error("invalid font: none of the public TTFs could be loaded");
   }
-  throw new Error("invalid font: none of the public TTFs could be loaded");
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
