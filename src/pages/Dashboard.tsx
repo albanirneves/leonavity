@@ -154,17 +154,18 @@ export default function Dashboard() {
         activeVotes.forEach(vote => {
           const voteValue = Number(eventData.vote_value);
           const votes = Number(vote.votes) || 0;
-          const baseAmount = voteValue * votes;
-          
-          grossRevenue += baseAmount;
-          
-          // Calcular líquido baseado no método de pagamento
+          const baseAmount = voteValue * votes; // líquido (sem taxas)
+
+          // Líquido = sem taxas
+          netRevenue += baseAmount;
+
+          // Bruto = com taxas, variando pelo método de pagamento
           if (vote.changed_to_card) {
             const cardTax = Number(eventData.card_tax) || 0;
-            netRevenue += baseAmount * (100 - cardTax) / 100;
+            grossRevenue += baseAmount * (100 + cardTax) / 100;
           } else {
             const pixTax = Number(eventData.pix_tax) || 0;
-            netRevenue += baseAmount * (100 - pixTax) / 100;
+            grossRevenue += baseAmount * (100 + pixTax) / 100;
           }
         });
       }
