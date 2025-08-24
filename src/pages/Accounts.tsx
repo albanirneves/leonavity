@@ -302,7 +302,7 @@ export default function Accounts() {
                 Nova Conta
               </CustomButton>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] mx-4 max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[500px] mx-4 my-4 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingAccount ? 'Editar Conta' : 'Nova Conta de Pagamento'}

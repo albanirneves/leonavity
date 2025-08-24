@@ -609,7 +609,7 @@ export default function Candidates() {
           </Select>
 
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl mx-4 my-4 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Adicionar Candidata</DialogTitle>
               </DialogHeader>
@@ -800,7 +800,7 @@ export default function Candidates() {
 
       {/* Candidate Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl mx-4 my-4 max-h-[90vh] overflow-y-auto">
           {selectedCandidate && (
             <>
               <DialogHeader>

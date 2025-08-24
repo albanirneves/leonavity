@@ -73,7 +73,7 @@ export function AppSidebar() {
     const active = isActive(path);
     return active 
       ? "bg-primary text-primary-foreground font-medium rounded-lg" 
-      : "hover:bg-sidebar-accent text-sidebar-foreground hover:text-sidebar-accent-foreground rounded-lg";
+      : "hover:bg-sidebar-accent text-sidebar-foreground hover:text-sidebar-accent-foreground rounded-lg text-foreground";
   };
 
   return (
@@ -110,8 +110,13 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
-                      className={`${getNavClass(item.url)} p-3 transition-all duration-200 group min-h-[48px]`}
+                      className={`${getNavClass(item.url)} p-3 transition-all duration-200 group min-h-[48px] flex items-center gap-3`}
                       title={isCollapsed ? item.title : undefined}
+                      onClick={() => {
+                        if (isMobile) {
+                          setOpen(false);
+                        }
+                      }}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
                       {!isCollapsed && (

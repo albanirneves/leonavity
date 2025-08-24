@@ -355,7 +355,7 @@ export default function Events() {
                 Novo Evento
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl mx-4 my-4 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Criar Novo Evento</DialogTitle>
               </DialogHeader>
@@ -380,7 +380,7 @@ export default function Events() {
                         }
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="mx-4 my-4">
                       <DialogHeader>
                         <DialogTitle>Selecionar Conta</DialogTitle>
                       </DialogHeader>
@@ -484,7 +484,7 @@ export default function Events() {
 
       {/* Edit Event Dialog */}
       <Dialog open={isEditEventDialogOpen} onOpenChange={setIsEditEventDialogOpen}>
-        <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl mx-4 my-4 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Evento</DialogTitle>
           </DialogHeader>
@@ -624,7 +624,7 @@ export default function Events() {
 
       {/* Categories Modal */}
       <Dialog open={isCategoriesDialogOpen} onOpenChange={setIsCategoriesDialogOpen}>
-        <DialogContent>
+        <DialogContent className="mx-4 my-4">
           <DialogHeader>
             <DialogTitle>Gerenciar Categorias</DialogTitle>
           </DialogHeader>
@@ -670,7 +670,7 @@ export default function Events() {
 
       {/* Edit Category Modal */}
       <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
-        <DialogContent>
+        <DialogContent className="mx-4 my-4">
           <DialogHeader>
             <DialogTitle>Editar Categoria</DialogTitle>
           </DialogHeader>
