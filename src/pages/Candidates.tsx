@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Users, Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Candidate {
   id: number;
@@ -38,6 +39,7 @@ interface CandidateWithDetails extends Candidate {
 }
 
 export default function Candidates() {
+  const [loading, setLoading] = useState(true);
   const [candidates, setCandidates] = useState<CandidateWithDetails[]>([]);
   const [filteredCandidates, setFilteredCandidates] = useState<CandidateWithDetails[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -59,8 +61,12 @@ export default function Candidates() {
   });
 
   useEffect(() => {
-    fetchEvents();
-    fetchCandidates();
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchEvents(), fetchCandidates()]);
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -279,6 +285,43 @@ export default function Candidates() {
       fetchCandidates();
     }
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-6 py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-48" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                  <div className="flex gap-1">
+                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-40 mt-2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

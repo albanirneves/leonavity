@@ -14,7 +14,8 @@ import {
   Search,
   CreditCard,
   Building,
-  Calendar
+  Calendar,
+  Trash2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -50,6 +51,7 @@ export default function Accounts() {
   const [showTokens, setShowTokens] = useState<Record<number, boolean>>({});
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showTokenInForm, setShowTokenInForm] = useState(false);
   const { toast } = useToast();
 
   // Form state
@@ -172,6 +174,35 @@ export default function Accounts() {
     setDialogOpen(true);
   };
 
+  const handleDelete = async (account: Account) => {
+    if (!confirm(`Tem certeza que deseja excluir a conta "${account.name}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('accounts')
+        .delete()
+        .eq('id', account.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Conta excluída",
+        description: "A conta foi excluída com sucesso.",
+      });
+
+      fetchAccounts();
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a conta. Tente novamente.",
+      });
+    }
+  };
+
   const handleCopyToken = async (token: string) => {
     try {
       await navigator.clipboard.writeText(token);
@@ -212,14 +243,20 @@ export default function Accounts() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="container mx-auto px-6 py-6 space-y-6">
         <div className="page-header">
-          <div className="loading-skeleton h-8 w-48"></div>
-          <div className="loading-skeleton h-4 w-64"></div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-8 w-64 bg-muted animate-pulse rounded"></div>
+              <div className="h-4 w-80 bg-muted animate-pulse rounded"></div>
+            </div>
+            <div className="h-10 w-32 bg-muted animate-pulse rounded"></div>
+          </div>
         </div>
+        <div className="h-20 bg-muted animate-pulse rounded"></div>
         <div className="space-y-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="loading-skeleton h-32"></div>
+            <div key={i} className="h-48 bg-muted animate-pulse rounded"></div>
           ))}
         </div>
       </div>
@@ -305,15 +342,26 @@ export default function Accounts() {
                    <Label htmlFor="access_token" className="text-sm font-medium">
                      Token de Acesso *
                    </Label>
-                   <Input
-                     id="access_token"
-                     type="password"
-                     placeholder="Token de acesso da API"
-                     value={formData.access_token}
-                     onChange={(e) => setFormData(prev => ({ ...prev, access_token: e.target.value }))}
-                     className="w-full"
-                     required
-                   />
+                    <div className="relative">
+                      <Input
+                        id="access_token"
+                        type={showTokenInForm ? "text" : "password"}
+                        placeholder="Token de acesso da API"
+                        value={formData.access_token}
+                        onChange={(e) => setFormData(prev => ({ ...prev, access_token: e.target.value }))}
+                        className="w-full pr-10"
+                        required
+                      />
+                      <CustomButton
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                        onClick={() => setShowTokenInForm(!showTokenInForm)}
+                      >
+                        {showTokenInForm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </CustomButton>
+                    </div>
                    <p className="text-xs text-muted-foreground">
                      Token para autenticação na API do marketplace
                    </p>
@@ -420,6 +468,14 @@ export default function Accounts() {
                     >
                       <Edit className="h-4 w-4" />
                       Editar
+                    </CustomButton>
+                    <CustomButton
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(account)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Excluir
                     </CustomButton>
                   </div>
                 </div>

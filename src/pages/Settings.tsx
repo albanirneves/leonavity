@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CustomButton } from '@/components/ui/button-variants';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Database, 
   Settings as SettingsIcon, 
@@ -17,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Settings() {
+  const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [supabaseUrl] = useState(import.meta.env.VITE_SUPABASE_URL || 'https://waslpdqekbwxptwgpjze.supabase.co');
   const [supabaseKey] = useState(import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJ...');
@@ -47,6 +49,8 @@ export default function Settings() {
         title: "Erro na conexão",
         description: "Não foi possível conectar ao Supabase. Verifique as configurações.",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,6 +62,35 @@ export default function Settings() {
     if (key.length <= 8) return '•'.repeat(key.length);
     return key.substring(0, 4) + '•'.repeat(Math.max(0, key.length - 8)) + key.substring(Math.max(4, key.length - 4));
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-6 py-6 space-y-6">
+        <div className="page-header">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-12 h-12 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-6">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-24 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

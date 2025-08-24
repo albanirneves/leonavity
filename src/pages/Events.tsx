@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Settings, Search, Edit, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Event {
   id: number;
@@ -37,6 +38,7 @@ interface Category {
 }
 
 export default function Events() {
+  const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -77,8 +79,12 @@ export default function Events() {
   });
 
   useEffect(() => {
-    fetchEvents();
-    fetchAccounts();
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchEvents(), fetchAccounts()]);
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -284,6 +290,36 @@ export default function Events() {
     setEditCategoryName(category.name);
     setIsEditCategoryDialogOpen(true);
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-6 py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-64" />
+                    <Skeleton className="h-4 w-56" />
+                  </div>
+                  <Skeleton className="h-9 w-28" />
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
