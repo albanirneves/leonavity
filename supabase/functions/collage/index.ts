@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   Image,
   ImageFont,
-} from "https://deno.land/x/imagescript@1.2.16/mod.ts";
+} from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 /** Utils */
 const hexToRgba = (hex: string, a = 0xff) =>
