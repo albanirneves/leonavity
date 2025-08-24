@@ -5,6 +5,12 @@ import {
   ImageFont,
 } from "https://deno.land/x/imagescript@1.2.16/mod.ts";
 
+/** CORS */
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 /** Utils */
 const hexToRgba = (hex: string, a = 0xff) =>
   ((parseInt(hex.replace("#", ""), 16) << 8) | a) >>> 0;
@@ -69,7 +75,11 @@ async function placeholder(w: number, h: number, text: string, font: ImageFont, 
 
 Deno.serve(async (req) => {
   try {
-    if (req.method !== "POST") return new Response("Use POST", { status: 405 });
+    // CORS preflight
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+    if (req.method !== "POST") return new Response(JSON.stringify({ error: "Use POST" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const body = (await req.json()) as Payload;
     const {
@@ -87,8 +97,8 @@ Deno.serve(async (req) => {
       jpegQuality = 85,
     } = body;;
 
-    if (!event_id || !category_id) {
-      return new Response("Missing event_id or category_id", { status: 400 });
+if (!event_id || !category_id) {
+      return new Response(JSON.stringify({ error: "Missing event_id or category_id" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // bucket & naming
@@ -119,8 +129,8 @@ Deno.serve(async (req) => {
       if (error) throw error;
       candidates = (data ?? []) as Candidate[];
     }
-    if (!candidates.length) {
-      return new Response("No candidates found", { status: 404 });
+if (!candidates.length) {
+      return new Response(JSON.stringify({ error: "No candidates found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const font = await loadFont();
@@ -200,13 +210,13 @@ Deno.serve(async (req) => {
       outputs.push({ path: outPath, publicUrl: pub.data.publicUrl });
     }
 
-    return new Response(JSON.stringify({ ok: true, title, pages: outputs }), {
-      headers: { "Content-Type": "application/json" },
+return new Response(JSON.stringify({ ok: true, title, pages: outputs }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
+} catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
