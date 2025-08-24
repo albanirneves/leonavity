@@ -298,32 +298,11 @@ export default function Dashboard() {
     <div className="container mx-auto px-6 py-6 space-y-6 animate-fade-in">
       {/* Page Header */}
       <div className="page-header">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gradient-brand">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Visão geral dos eventos e métricas em tempo real
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-muted-foreground">
-              Última atualização: {formatDate(lastUpdate.toISOString())}
-            </div>
-            <CustomButton 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchDashboardData}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </CustomButton>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold text-gradient-brand">Dashboard</h1>
       </div>
 
       {/* Event Selection */}
-      <div className="flex items-center gap-4 bg-card p-4 rounded-lg border">
+      <div className="flex items-center gap-4 bg-card p-3 rounded-lg border">
         <Search className="h-5 w-5 text-muted-foreground" />
         <div className="flex-1">
           <Select value={selectedEvent} onValueChange={setSelectedEvent}>
@@ -339,19 +318,28 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
         </div>
+        <CustomButton 
+          variant="outline" 
+          size="sm" 
+          onClick={fetchDashboardData}
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </CustomButton>
       </div>
 
       {/* Metrics Cards */}
       {selectedEvent && (
         <div className="metrics-grid">
           <Card className="metric-card-success">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
               <CardTitle className="text-sm font-medium text-white/90">
                 Votos Ativos
               </CardTitle>
               <Activity className="h-4 w-4 text-white/80" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-2">
               <div className="text-2xl font-bold text-white">{stats.votesActive}</div>
               <p className="text-xs text-white/70">
                 Votos aprovados no evento
@@ -360,13 +348,13 @@ export default function Dashboard() {
           </Card>
 
           <Card className="metric-card-warning">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
               <CardTitle className="text-sm font-medium text-white/90">
                 Faturamento Bruto
               </CardTitle>
               <DollarSign className="h-4 w-4 text-white/80" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-2">
               <div className="text-2xl font-bold text-white">
                 {formatCurrency(stats.grossRevenue)}
               </div>
@@ -377,13 +365,13 @@ export default function Dashboard() {
           </Card>
 
           <Card className="metric-card-brand">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
               <CardTitle className="text-sm font-medium text-white/90">
                 Faturamento Líquido
               </CardTitle>
               <TrendingUp className="h-4 w-4 text-white/80" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-2">
               <div className="text-2xl font-bold text-white">
                 {formatCurrency(stats.netRevenue)}
               </div>
@@ -394,13 +382,13 @@ export default function Dashboard() {
           </Card>
 
           <Card className="metric-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
               <CardTitle className="text-sm font-medium">
                 Candidatas
               </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-2">
               <div className="text-2xl font-bold">{stats.totalCandidates}</div>
               <p className="text-xs text-muted-foreground">
                 Cadastradas no evento
