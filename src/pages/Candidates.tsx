@@ -208,8 +208,28 @@ export default function Candidates() {
     setFilteredCandidates(filtered);
   };
 
-  const openCandidateModal = (candidate: CandidateWithDetails) => {
-    setSelectedCandidate(candidate);
+  const openCandidateModal = async (candidate: CandidateWithDetails) => {
+    // Reset photo selection states
+    setSelectedPhoto(null);
+    setPhotoPreview(null);
+    
+    // Get the fresh photo URL from storage to avoid cache
+    const fileName = `event_${candidate.id_event}_category_${candidate.id_category}_candidate_${candidate.id_candidate}`;
+    const filePath = `${fileName}.jpg`;
+    
+    const { data: photoData } = await supabase.storage
+      .from('candidates')
+      .getPublicUrl(filePath);
+    
+    // Add timestamp to break cache
+    const freshPhotoUrl = `${photoData.publicUrl}?t=${Date.now()}`;
+    
+    const candidateWithFreshPhoto = {
+      ...candidate,
+      photo_url: freshPhotoUrl
+    };
+    
+    setSelectedCandidate(candidateWithFreshPhoto);
     setEditCandidateForm({
       name: candidate.name,
       name_complete: candidate.name_complete || '',
@@ -217,9 +237,7 @@ export default function Candidates() {
       id_category: candidate.id_category.toString(),
       id_candidate: candidate.id_candidate.toString()
     });
-    // Reset photo selection states
-    setSelectedPhoto(null);
-    setPhotoPreview(null);
+    
     // Load categories for the selected event
     fetchCategories(candidate.id_event);
     setIsModalOpen(true);
