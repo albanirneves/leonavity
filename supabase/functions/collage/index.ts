@@ -5,6 +5,9 @@ import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 const hexToRgba = (hex: string, a = 0xff) =>
   ((parseInt(hex.replace("#", ""), 16) << 8) | a) >>> 0;
 
+// Bucket used for photos and also for optional font asset
+const FONT_BUCKET = "candidates";
+
 type Candidate = {
   id_candidate: number;
   name: string;
@@ -41,7 +44,31 @@ let FONT_CACHE: Uint8Array | null = null;
 async function loadFont(): Promise<Uint8Array> {
   if (FONT_CACHE) return FONT_CACHE;
 
-  // Use reliable CDNs first, then GitHub raw as last resort
+  // 1) Try local bundled font first (most reliable)
+  try {
+    const localUrl = new URL("./OpenSans-SemiBold.ttf", import.meta.url);
+    const bytes = await Deno.readFile(localUrl);
+    FONT_CACHE = bytes;
+    return bytes;
+  } catch (_) {
+    // continue to try Supabase Storage, then remote fallbacks
+  }
+
+  // 1b) Try Supabase Storage asset (upload once and reuse)
+  try {
+    const supabase = getClient();
+    const dl = await supabase.storage.from(FONT_BUCKET).download("assets/OpenSans-SemiBold.ttf");
+    if (dl.data) {
+      const bytes = new Uint8Array(await dl.data.arrayBuffer());
+      FONT_CACHE = bytes;
+      console.log("[collage] loaded font from Supabase Storage assets/OpenSans-SemiBold.ttf");
+      return bytes;
+    }
+  } catch (_) {
+    // ignore and continue
+  }
+
+  // 2) Remote fallbacks via reliable CDNs
   const FONT_URLS = [
     // Nunito 600 via fontsource (unpkg)
     "https://unpkg.com/@fontsource/nunito/files/nunito-latin-600-normal.ttf",
@@ -49,13 +76,15 @@ async function loadFont(): Promise<Uint8Array> {
     "https://unpkg.com/@fontsource/open-sans/files/open-sans-latin-600-normal.ttf",
     // DejaVu via jsdelivr
     "https://cdn.jsdelivr.net/gh/dejavu-fonts/dejavu-fonts/ttf/DejaVuSans.ttf",
+    // jsDelivr GitHub mirror of Google Fonts
+    "https://cdn.jsdelivr.net/gh/google/fonts@main/apache/opensans/OpenSans-SemiBold.ttf",
     // Fallbacks (GitHub raw)
     "https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans.ttf",
     "https://raw.githubusercontent.com/google/fonts/main/apache/opensans/OpenSans-SemiBold.ttf",
     "https://raw.githubusercontent.com/google/fonts/main/ofl/nunito/static/Nunito-SemiBold.ttf",
   ];
 
-  const TIMEOUT_MS = 4000;
+  const TIMEOUT_MS = 15000; // allow more time for cold-start/network egress
   const fetchWithTimeout = (url: string) =>
     new Promise<Uint8Array>(async (resolve, reject) => {
       const ctrl = new AbortController();
@@ -68,9 +97,11 @@ async function loadFont(): Promise<Uint8Array> {
         }
         const bytes = new Uint8Array(await res.arrayBuffer());
         clearTimeout(timer);
+        console.log(`[collage] loaded font from: ${url}`);
         resolve(bytes);
       } catch (e) {
         clearTimeout(timer);
+        console.warn(`[collage] font fetch failed: ${url}`, e);
         reject(e);
       }
     });
