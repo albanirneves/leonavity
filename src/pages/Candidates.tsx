@@ -60,6 +60,9 @@ export default function Candidates() {
     id_candidate: ''
   });
 
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -244,19 +247,38 @@ export default function Candidates() {
       return;
     }
 
-    const { error } = await supabase
-      .from('candidates')
-      .insert([{
-        name: newCandidateForm.name,
-        name_complete: newCandidateForm.name_complete || null,
-        id_event: parseInt(newCandidateForm.id_event),
-        id_category: parseInt(newCandidateForm.id_category),
-        id_candidate: parseInt(newCandidateForm.id_candidate)
-      }]);
+    setUploading(true);
 
-    if (error) {
-      toast({ title: 'Erro', description: 'Erro ao criar candidata', variant: 'destructive' });
-    } else {
+    try {
+      // First, create the candidate
+      const { error } = await supabase
+        .from('candidates')
+        .insert([{
+          name: newCandidateForm.name,
+          name_complete: newCandidateForm.name_complete || null,
+          id_event: parseInt(newCandidateForm.id_event),
+          id_category: parseInt(newCandidateForm.id_category),
+          id_candidate: parseInt(newCandidateForm.id_candidate)
+        }]);
+
+      if (error) throw error;
+
+      // If there's a photo selected, upload it
+      if (selectedPhoto) {
+        const fileName = `event_${newCandidateForm.id_event}_category_${newCandidateForm.id_category}_candidate_${newCandidateForm.id_candidate}`;
+        const fileExt = 'jpg';
+        const filePath = `${fileName}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('candidates')
+          .upload(filePath, selectedPhoto, { upsert: true });
+
+        if (uploadError) {
+          console.error('Error uploading photo:', uploadError);
+          // Don't throw error here, just log it since candidate was created successfully
+        }
+      }
+
       toast({ title: 'Sucesso', description: 'Candidata criada com sucesso' });
       setIsAddModalOpen(false);
       setNewCandidateForm({
@@ -266,7 +288,13 @@ export default function Candidates() {
         id_category: '',
         id_candidate: ''
       });
+      setSelectedPhoto(null);
+      setPhotoPreview(null);
       fetchCandidates();
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Erro ao criar candidata', variant: 'destructive' });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -283,6 +311,18 @@ export default function Candidates() {
     } else {
       toast({ title: 'Sucesso', description: 'Candidata excluída com sucesso' });
       fetchCandidates();
+    }
+  };
+
+  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedPhoto(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -354,82 +394,126 @@ export default function Candidates() {
           </Select>
 
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Adicionar Candidata</DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="new_event">Evento *</Label>
-                  <Select value={newCandidateForm.id_event} onValueChange={(value) => {
-                    setNewCandidateForm({ ...newCandidateForm, id_event: value, id_category: '' });
-                    if (value) fetchCategories(parseInt(value));
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar evento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {events.map((event) => (
-                        <SelectItem key={event.id} value={event.id.toString()}>
-                          {event.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="new_event">Evento *</Label>
+                    <Select value={newCandidateForm.id_event} onValueChange={(value) => {
+                      setNewCandidateForm({ ...newCandidateForm, id_event: value, id_category: '' });
+                      if (value) fetchCategories(parseInt(value));
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecionar evento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {events.map((event) => (
+                          <SelectItem key={event.id} value={event.id.toString()}>
+                            {event.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="new_category">Categoria *</Label>
+                    <Select value={newCandidateForm.id_category} onValueChange={(value) => setNewCandidateForm({ ...newCandidateForm, id_category: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecionar categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id_category.toString()}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="new_id_candidate">ID da Candidata *</Label>
+                    <Input
+                      id="new_id_candidate"
+                      type="number"
+                      value={newCandidateForm.id_candidate}
+                      onChange={(e) => setNewCandidateForm({ ...newCandidateForm, id_candidate: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="new_name">Nome de Exibição *</Label>
+                    <Input
+                      id="new_name"
+                      value={newCandidateForm.name}
+                      onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="new_name_complete">Nome Completo</Label>
+                    <Input
+                      id="new_name_complete"
+                      value={newCandidateForm.name_complete}
+                      onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name_complete: e.target.value })}
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="new_category">Categoria *</Label>
-                  <Select value={newCandidateForm.id_category} onValueChange={(value) => setNewCandidateForm({ ...newCandidateForm, id_category: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id_category.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="new_id_candidate">ID da Candidata *</Label>
-                  <Input
-                    id="new_id_candidate"
-                    type="number"
-                    value={newCandidateForm.id_candidate}
-                    onChange={(e) => setNewCandidateForm({ ...newCandidateForm, id_candidate: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="new_name">Nome de Exibição *</Label>
-                  <Input
-                    id="new_name"
-                    value={newCandidateForm.name}
-                    onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="new_name_complete">Nome Completo</Label>
-                  <Input
-                    id="new_name_complete"
-                    value={newCandidateForm.name_complete}
-                    onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name_complete: e.target.value })}
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <Label>Foto da Candidata</Label>
+                    <div className="mt-2">
+                      {photoPreview ? (
+                        <img 
+                          src={photoPreview} 
+                          alt="Preview"
+                          className="w-full h-64 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
+                          <span className="text-muted-foreground">Nenhuma foto selecionada</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="candidate-photo-upload">Selecionar Foto</Label>
+                    <div className="mt-2">
+                      <Input
+                        id="candidate-photo-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoSelect}
+                        disabled={uploading}
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        A foto será salva automaticamente com o nome baseado nos IDs selecionados
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
               <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setSelectedPhoto(null);
+                    setPhotoPreview(null);
+                  }}
+                >
                   Cancelar
                 </Button>
-                <Button onClick={handleCreateCandidate}>
-                  Criar Candidata
+                <Button onClick={handleCreateCandidate} disabled={uploading}>
+                  {uploading ? 'Criando...' : 'Criar Candidata'}
                 </Button>
               </div>
             </DialogContent>
