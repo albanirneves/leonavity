@@ -588,7 +588,7 @@ export default function Events() {
                 <div className="space-y-2">
                   <CardTitle>{event.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Votação: {event.start_vote ? event.start_vote.split('-').reverse().join('/') : 'N/A'} - {event.end_vote ? event.end_vote.split('-').reverse().join('/') : 'N/A'}
+                    Votação: {event.start_vote ? event.start_vote.split('T')[0].split('-').reverse().join('/') : 'N/A'} - {event.end_vote ? event.end_vote.split('T')[0].split('-').reverse().join('/') : 'N/A'}
                   </p>
                   <p className="text-sm">
                     Valor do voto: R$ {event.vote_value}
