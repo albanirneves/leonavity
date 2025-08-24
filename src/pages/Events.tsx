@@ -428,13 +428,13 @@ export default function Events() {
             </div>
 
             <div>
-              <Label htmlFor="pix_tax">Taxa PIX</Label>
+              <Label htmlFor="pix_tax">Taxa PIX (%)</Label>
               <Input
                 id="pix_tax"
-                placeholder="R$ 0,00"
-                value={eventForm.pix_tax}
+                placeholder="0,00%"
+                value={`${parseFloat(eventForm.pix_tax || '0').toFixed(2).replace('.', ',')}%`}
                 onChange={(e) => {
-                  let value = e.target.value.replace(/\D/g, '');
+                  let value = e.target.value.replace(/[^\d]/g, '');
                   value = (parseFloat(value) / 100).toFixed(2);
                   if (value === 'NaN') value = '';
                   setEventForm({ ...eventForm, pix_tax: value });
@@ -443,13 +443,13 @@ export default function Events() {
             </div>
 
             <div>
-              <Label htmlFor="card_tax">Taxa Cartão</Label>
+              <Label htmlFor="card_tax">Taxa Cartão (%)</Label>
               <Input
                 id="card_tax"
-                placeholder="R$ 0,00"
-                value={eventForm.card_tax}
+                placeholder="0,00%"
+                value={`${parseFloat(eventForm.card_tax || '0').toFixed(2).replace('.', ',')}%`}
                 onChange={(e) => {
-                  let value = e.target.value.replace(/\D/g, '');
+                  let value = e.target.value.replace(/[^\d]/g, '');
                   value = (parseFloat(value) / 100).toFixed(2);
                   if (value === 'NaN') value = '';
                   setEventForm({ ...eventForm, card_tax: value });
@@ -539,7 +539,7 @@ export default function Events() {
             </div>
 
             <div>
-              <Label htmlFor="edit_pix_tax">Taxa PIX</Label>
+              <Label htmlFor="edit_pix_tax">Taxa PIX (%)</Label>
               <Input
                 id="edit_pix_tax"
                 placeholder="0,00%"
@@ -554,7 +554,7 @@ export default function Events() {
             </div>
 
             <div>
-              <Label htmlFor="edit_card_tax">Taxa Cartão</Label>
+              <Label htmlFor="edit_card_tax">Taxa Cartão (%)</Label>
               <Input
                 id="edit_card_tax"
                 placeholder="0,00%"
