@@ -71,9 +71,9 @@ export function AppSidebar() {
       className={isCollapsed ? "w-16" : "w-72"}
       collapsible="icon"
     >
-      <SidebarContent className="gap-0 p-4">
+      <SidebarContent className={`gap-0 ${isCollapsed ? "p-2" : "p-4"}`}>
         {/* Logo area */}
-        <div className="flex items-center gap-3 px-2 py-4 mb-6">
+        <div className={`flex items-center gap-3 ${isCollapsed ? "px-1 py-2 mb-2" : "px-2 py-4 mb-6"}`}>
           {!isCollapsed && (
             <>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -85,7 +85,7 @@ export function AppSidebar() {
               </div>
             </>
           )}
-          <div className="ml-auto">
+          <div className={isCollapsed ? "w-full flex justify-center" : "ml-auto"}>
             <SidebarTrigger className="w-8 h-8" />
           </div>
         </div>
@@ -99,12 +99,12 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
-                      className={`${getNavClass(item.url)} p-3 transition-all duration-200 group min-h-[48px]`}
+                      className={`${getNavClass(item.url)} ${isCollapsed ? "p-2 justify-center" : "p-3"} transition-all duration-200 group min-h-[48px] flex items-center`}
                       title={isCollapsed ? item.title : undefined}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
                       {!isCollapsed && (
-                        <span className="font-medium text-sm">{item.title}</span>
+                        <span className="font-medium text-sm ml-3">{item.title}</span>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
