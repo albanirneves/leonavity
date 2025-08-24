@@ -214,6 +214,9 @@ export default function Candidates() {
       id_category: candidate.id_category.toString(),
       id_candidate: candidate.id_candidate.toString()
     });
+    // Reset photo selection states
+    setSelectedPhoto(null);
+    setPhotoPreview(null);
     // Load categories for the selected event
     fetchCategories(candidate.id_event);
     setIsModalOpen(true);
@@ -408,13 +411,31 @@ export default function Candidates() {
 
         const jpegBlob = await convertToJpeg(selectedPhoto);
 
+        // Remove old file first to ensure fresh upload
+        await supabase.storage
+          .from('candidates')
+          .remove([filePath]);
+
         const { error: uploadError } = await supabase.storage
           .from('candidates')
-          .upload(filePath, jpegBlob, { upsert: true, contentType: 'image/jpeg' });
+          .upload(filePath, jpegBlob, { contentType: 'image/jpeg' });
 
         if (uploadError) {
           console.error('Error uploading photo:', uploadError);
           // Don't throw error here, just log it since candidate was updated successfully
+        } else {
+          // Force refresh the URL with timestamp to avoid cache
+          const { data: urlData } = await supabase.storage
+            .from('candidates')
+            .getPublicUrl(filePath);
+          
+          const freshUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+          
+          // Update the selected candidate with the new photo URL
+          setSelectedCandidate(prev => prev ? {
+            ...prev,
+            photo_url: freshUrl
+          } : prev);
         }
       }
 
@@ -436,7 +457,16 @@ export default function Candidates() {
       setSelectedPhoto(file);
       const reader = new FileReader();
       reader.onload = (e) => {
-        setPhotoPreview(e.target?.result as string);
+        const newPreview = e.target?.result as string;
+        setPhotoPreview(newPreview);
+        
+        // If we're editing a candidate, update the preview immediately
+        if (selectedCandidate) {
+          setSelectedCandidate({
+            ...selectedCandidate,
+            photo_url: newPreview
+          });
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -794,7 +824,7 @@ export default function Candidates() {
                 
                 <div className="space-y-4">
                   <div>
-                    <Label>Foto Atual</Label>
+                    <Label>Foto da Candidata</Label>
                     <div className="mt-2">
                       {selectedCandidate.photo_url ? (
                         <img 
@@ -805,35 +835,6 @@ export default function Candidates() {
                       ) : (
                         <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
                           <span className="text-muted-foreground">Sem foto</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="edit-photo-upload">Nova Foto</Label>
-                    <div className="mt-2">
-                      {photoPreview ? (
-                        <div className="space-y-2">
-                          <img 
-                            src={photoPreview} 
-                            alt="Preview" 
-                            className="w-full h-64 object-cover rounded-lg"
-                          />
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedPhoto(null);
-                              setPhotoPreview(null);
-                            }}
-                            className="w-full"
-                          >
-                            Remover Foto
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
-                          <span className="text-muted-foreground">Nenhuma foto selecionada</span>
                         </div>
                       )}
                     </div>
@@ -856,7 +857,7 @@ export default function Candidates() {
                       className="w-full"
                     >
                       <Camera className="h-4 w-4 mr-2" />
-                      Selecionar Foto
+                      {selectedCandidate.photo_url ? 'Trocar Foto' : 'Selecionar Foto'}
                     </Button>
                   </div>
                 </div>
