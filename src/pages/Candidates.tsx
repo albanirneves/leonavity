@@ -440,39 +440,29 @@ export default function Candidates() {
 
           if (uploadError) {
             console.error('❌ Upload failed:', uploadError);
-            toast({ title: 'Erro', description: 'Erro ao fazer upload da foto', variant: 'destructive' });
+            toast({ title: 'Erro', description: `Erro ao fazer upload da foto: ${uploadError.message}`, variant: 'destructive' });
+            throw uploadError; // This will prevent the success message
           } else {
             console.log('✅ Upload successful:', uploadData);
-            
-            // Force refresh the URL with timestamp to avoid cache
-            const { data: urlData } = await supabase.storage
-              .from('candidates')
-              .getPublicUrl(filePath);
-            
-            const freshUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-            console.log('🔗 New photo URL:', freshUrl);
-            
-            // Update the selected candidate with the new photo URL
-            setSelectedCandidate(prev => prev ? {
-              ...prev,
-              photo_url: freshUrl
-            } : prev);
-            
-            console.log('✅ Photo upload and update complete!');
+            toast({ title: 'Sucesso', description: 'Foto atualizada com sucesso!' });
           }
         } catch (conversionError) {
           console.error('❌ JPEG conversion failed:', conversionError);
           toast({ title: 'Erro', description: 'Erro ao processar imagem', variant: 'destructive' });
+          throw conversionError; // This will prevent the success message
         }
       } else {
         console.log('ℹ️ No photo selected for upload');
       }
 
       toast({ title: 'Sucesso', description: 'Candidata atualizada com sucesso' });
+      
+      // Always refresh the candidates list to get fresh photo URLs
+      await fetchCandidates();
+      
       setIsModalOpen(false);
       setSelectedPhoto(null);
       setPhotoPreview(null);
-      fetchCandidates();
     } catch (error) {
       toast({ title: 'Erro', description: 'Erro ao atualizar candidata', variant: 'destructive' });
     } finally {

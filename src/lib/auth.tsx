@@ -57,12 +57,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(session);
       setUser(session?.user ?? null);
 
-      if (event === 'SIGNED_IN') {
-        toast({ title: 'Login realizado', description: `Bem-vindo(a), ${session?.user?.email}` });
-      }
-      if (event === 'SIGNED_OUT') {
-        toast({ title: 'Sessão encerrada', description: 'Você saiu da aplicação.' });
-      }
+      // Remove the toast notifications for auth events
+      // Only set the session and user state
     });
 
     // THEN get initial session
