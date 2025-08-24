@@ -296,11 +296,6 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto px-6 py-6 space-y-6 animate-fade-in">
-      {/* Page Header */}
-      <div className="page-header">
-        <h1 className="text-3xl font-bold text-gradient-brand">Dashboard</h1>
-      </div>
-
       {/* Event Selection */}
       <div className="flex items-center gap-4 bg-card p-3 rounded-lg border">
         <Search className="h-5 w-5 text-muted-foreground" />
