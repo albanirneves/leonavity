@@ -506,10 +506,10 @@ export default function Events() {
               <Label htmlFor="edit_pix_tax">Taxa PIX</Label>
               <Input
                 id="edit_pix_tax"
-                placeholder="R$ 0,00"
-                value={`R$ ${parseFloat(editEventForm.pix_tax || '0').toFixed(2).replace('.', ',')}`}
+                placeholder="0,00%"
+                value={`${parseFloat(editEventForm.pix_tax || '0').toFixed(2).replace('.', ',')}%`}
                 onChange={(e) => {
-                  let value = e.target.value.replace(/\D/g, '');
+                  let value = e.target.value.replace(/[^\d]/g, '');
                   value = (parseFloat(value) / 100).toFixed(2);
                   if (value === 'NaN') value = '';
                   setEditEventForm({ ...editEventForm, pix_tax: value });
@@ -521,10 +521,10 @@ export default function Events() {
               <Label htmlFor="edit_card_tax">Taxa Cartão</Label>
               <Input
                 id="edit_card_tax"
-                placeholder="R$ 0,00"
-                value={`R$ ${parseFloat(editEventForm.card_tax || '0').toFixed(2).replace('.', ',')}`}
+                placeholder="0,00%"
+                value={`${parseFloat(editEventForm.card_tax || '0').toFixed(2).replace('.', ',')}%`}
                 onChange={(e) => {
-                  let value = e.target.value.replace(/\D/g, '');
+                  let value = e.target.value.replace(/[^\d]/g, '');
                   value = (parseFloat(value) / 100).toFixed(2);
                   if (value === 'NaN') value = '';
                   setEditEventForm({ ...editEventForm, card_tax: value });
