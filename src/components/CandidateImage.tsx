@@ -32,13 +32,16 @@ export const CandidateImage = ({ src, alt, className = "" }: CandidateImageProps
     );
   }
 
+  // Add cache busting parameter to prevent loading old images
+  const cacheBustedSrc = hasValidSrc ? `${src}?t=${Date.now()}` : src;
+
   return (
     <div className={`relative ${className}`}>
       {isLoading && (
         <Skeleton className={`absolute inset-0 ${className}`} />
       )}
       <img
-        src={src}
+        src={cacheBustedSrc}
         alt={alt}
         className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
         onLoad={handleLoad}

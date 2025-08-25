@@ -645,51 +645,51 @@ export default function Candidates() {
             className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
             onClick={() => openCandidateModal(candidate)}
           >
-            <div className="aspect-[4/5] w-full">
-              <CandidateImage
-                src={candidate.photo_url}
-                alt={`Foto de ${candidate.name}`}
-                className="w-full h-full object-cover"
-              />
+            <div className="flex gap-4 p-4">
+              <div className="w-20 h-24 flex-shrink-0">
+                <CandidateImage
+                  src={candidate.photo_url}
+                  alt={`Foto de ${candidate.name}`}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="text-base truncate">#{candidate.id_candidate} - {candidate.name}</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      {candidate.event_name} - {candidate.category_name}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 ml-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openCandidateModal(candidate);
+                      }}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCandidate(candidate);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <Users className="h-3 w-3" />
+                  <span>{candidate.votes_count} votos</span>
+                </div>
+              </div>
             </div>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">#{candidate.id_candidate} - {candidate.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {candidate.event_name} - {candidate.category_name}
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openCandidateModal(candidate);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteCandidate(candidate);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4" />
-                <span>{candidate.votes_count} votos</span>
-              </div>
-            </CardContent>
           </Card>
         ))}
       </div>
