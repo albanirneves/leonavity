@@ -47,6 +47,7 @@ export default function Candidates() {
   const [events, setEvents] = useState<Event[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithDetails | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,12 +111,14 @@ export default function Candidates() {
   useEffect(() => {
     if (selectedEvent && selectedEvent !== '') {
       fetchCategories(parseInt(selectedEvent));
+      // Reset category selection when event changes
+      setSelectedCategory('');
     }
   }, [selectedEvent]);
 
   useEffect(() => {
     applyFilters();
-  }, [candidates, selectedEvent, searchTerm]);
+  }, [candidates, selectedEvent, selectedCategory, searchTerm]);
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -221,6 +224,11 @@ export default function Candidates() {
     // Always filter by selected event (no "all" option)
     if (selectedEvent && selectedEvent !== '') {
       filtered = filtered.filter(c => c.id_event === parseInt(selectedEvent));
+    }
+    
+    // Filter by selected category if one is selected
+    if (selectedCategory && selectedCategory !== '') {
+      filtered = filtered.filter(c => c.id_category === parseInt(selectedCategory));
     }
     
     if (searchTerm) {
@@ -599,10 +607,24 @@ export default function Candidates() {
             <SelectTrigger className="w-full sm:w-64">
               <SelectValue placeholder="Selecione um evento" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-50 bg-popover">
               {events.map((event) => (
                 <SelectItem key={event.id} value={event.id.toString()}>
                   {event.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Todas as categorias" />
+            </SelectTrigger>
+            <SelectContent className="z-50 bg-popover">
+              <SelectItem value="">Todas as categorias</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id_category.toString()}>
+                  {category.name}
                 </SelectItem>
               ))}
             </SelectContent>
