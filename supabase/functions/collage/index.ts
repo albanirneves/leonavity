@@ -129,6 +129,34 @@ async function centerCropToSquare(photo: Image, size: number): Promise<Image> {
   return square.resize(size, size);
 }
 
+async function centerCropToAspect(
+  photo: Image,
+  aspectW: number,
+  aspectH: number,
+  targetW: number,
+  targetH: number
+): Promise<Image> {
+  const targetAR = aspectW / aspectH; // W/H
+  const imgAR = photo.width / photo.height;
+
+  let cropX = 0;
+  let cropY = 0;
+  let cropW = photo.width;
+  let cropH = photo.height;
+
+  if (imgAR > targetAR) {
+    // too wide -> crop sides
+    cropW = Math.floor(photo.height * targetAR);
+    cropX = Math.floor((photo.width - cropW) / 2);
+  } else if (imgAR < targetAR) {
+    // too tall -> crop top/bottom
+    cropH = Math.floor(photo.width / targetAR);
+    cropY = Math.floor((photo.height - cropH) / 2);
+  }
+  const cropped = photo.crop(cropX, cropY, cropW, cropH);
+  return cropped.resize(targetW, targetH);
+}
+
 async function placeholder(w: number, h: number, text: string, font: Uint8Array, color: number) {
   const img = new Image(w, h);
   img.fill(hexToRgba("#eaeaea"));
@@ -240,9 +268,17 @@ Deno.serve(async (req) => {
 
       const availableH = outH - headerH - margin * 2 - gap * (rows - 1);
       const availableW = outW - margin * 2 - gap * (cols - 1);
-      const tileW = Math.floor(availableW / cols);
-      const tileH = Math.floor(availableH / rows);
-      const photoSize = Math.min(tileW, tileH - captionH);
+const tileW = Math.floor(availableW / cols);
+const tileH = Math.floor(availableH / rows);
+// portrait 4:5
+const ar = 4 / 5;
+const imgAreaH = tileH - captionH;
+let photoW = tileW;
+let photoH = Math.floor(photoW / ar);
+if (photoH > imgAreaH) {
+  photoH = imgAreaH;
+  photoW = Math.floor(photoH * ar);
+}
 
       for (let i = 0; i < page.length; i++) {
         const cand = page[i];
@@ -262,21 +298,21 @@ Deno.serve(async (req) => {
           try { img = await Image.decode(bytes); } catch { img = null; }
         }
 
-        let photo: Image;
-        if (img) {
-          photo = await centerCropToSquare(img, photoSize);
-        } else {
-          photo = await placeholder(photoSize, photoSize, "Sem foto", font, textRGBA);
-        }
-        const photoX = x + Math.floor((tileW - photoSize) / 2);
-        canvas.composite(photo, photoX, y);
+let photo: Image;
+if (img) {
+  photo = await centerCropToAspect(img, 4, 5, photoW, photoH);
+} else {
+  photo = await placeholder(photoW, photoH, "Sem foto", font, textRGBA);
+}
+const photoX = x + Math.floor((tileW - photoW) / 2);
+canvas.composite(photo, photoX, y);
 
-        // caption: "ID - Name"
-        const caption = `${String(cand.id_candidate).padStart(2, "0")} - ${cand.name ?? ""}`;
-        const textImg = await Image.renderText(font, 30, caption, textRGBA);
-        const tx = x + Math.floor((tileW - textImg.width) / 2);
-        const ty = y + photoSize + Math.floor((captionH - textImg.height) / 2);
-        canvas.composite(textImg, tx, ty);
+// caption: "ID - Name"
+const caption = `${String(cand.id_candidate).padStart(2, "0")} - ${cand.name ?? ""}`;
+const textImg = await Image.renderText(font, 30, caption, textRGBA);
+const tx = x + Math.floor((tileW - textImg.width) / 2);
+const ty = y + photoH + Math.floor((captionH - textImg.height) / 2);
+canvas.composite(textImg, tx, ty);
       }
 
       const jpg = await canvas.encodeJPEG(jpegQuality);
