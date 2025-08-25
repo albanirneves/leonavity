@@ -45,6 +45,7 @@ interface DashboardStats {
     votes: number;
     event: string;
     category: string;
+    photo_url?: string;        // photo avatar for Top Candidates
   }>;
   recentPayments: Array<{
     id: string;
@@ -178,6 +179,16 @@ export default function Dashboard() {
 
       if (candidatesError) throw candidatesError;
 
+      // Buscar categorias para mapear id -> nome de categoria
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('id_category, name')
+        .eq('id_event', eventId);
+      if (categoriesError) throw categoriesError;
+      const categoryNameMap = new Map<number, string>(
+        (categoriesData || []).map((c) => [c.id_category, c.name])
+      );
+
       // Calcular votos por candidata
       const candidatesWithVotes = await Promise.all(
         (candidatesData || []).map(async (candidate) => {
@@ -195,7 +206,9 @@ export default function Dashboard() {
             name: candidate.name,
             votes: totalVotes,
             event: 'Evento Atual',
-            category: `Categoria ${candidate.id_category}`
+            category: categoryNameMap.get(candidate.id_category) || `Categoria ${candidate.id_category}`,
+            photo_url: `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${candidate.id_category}_candidate_${candidate.id_candidate}.jpg`,
+            //category: `Categoria ${candidate.id_category}`
           };
         })
       );
@@ -273,12 +286,6 @@ export default function Dashboard() {
           return { date, votes: totalVotes };
         });
       }
-
-      // 8. Buscar ranking por categoria
-      const { data: categoriesData } = await supabase
-        .from('categories')
-        .select('id_category, name')
-        .eq('id_event', eventId);
 
       const categoryRankings = await Promise.all(
         (categoriesData || []).map(async (category) => {
@@ -598,8 +605,16 @@ export default function Dashboard() {
                   {stats.topCandidates.map((candidate, index) => (
                     <div key={index} className="flex items-center justify-between border-b border-muted pb-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-sm">
-                          {index + 1}
+                        {/* Avatar da candidata em vez do número */}
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                          <img
+                            src={candidate.photo_url || '/placeholder.svg'}
+                            alt={candidate.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
                         </div>
                         <div>
                           <p className="font-medium">{candidate.name}</p>
