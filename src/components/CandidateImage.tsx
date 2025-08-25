@@ -32,8 +32,9 @@ export const CandidateImage = ({ src, alt, className = "" }: CandidateImageProps
     );
   }
 
-  // Add cache busting parameter to prevent loading old images
-  const cacheBustedSrc = hasValidSrc ? `${src}?t=${Date.now()}` : src;
+  // Add cache busting parameter to prevent loading old images (but not for data URLs)
+  const isDataUrl = src?.startsWith('data:');
+  const cacheBustedSrc = hasValidSrc && !isDataUrl ? `${src}?t=${Date.now()}` : src;
 
   return (
     <div className={`relative ${className}`}>
