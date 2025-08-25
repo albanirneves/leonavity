@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Settings, Search, Edit, Trash2 } from 'lucide-react';
+import { Plus, Settings, Search, Edit, Trash2, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface Event {
@@ -23,6 +24,7 @@ interface Event {
   pix_tax: number;
   card_tax: number;
   created_at: string;
+  msg_saudacao?: string;
 }
 
 interface Account {
@@ -57,6 +59,11 @@ export default function Events() {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [editCategoryName, setEditCategoryName] = useState('');
+
+  const [isMessagesDialogOpen, setIsMessagesDialogOpen] = useState(false);
+  const [messagesText, setMessagesText] = useState('');
+  const [selectedEventForMessages, setSelectedEventForMessages] = useState<Event | null>(null);
+
   const { toast } = useToast();
 
   const [eventForm, setEventForm] = useState({
@@ -279,6 +286,41 @@ export default function Events() {
     setSelectedEvent(eventId);
     fetchCategories(eventId);
     setIsCategoriesDialogOpen(true);
+  };
+
+  // Open "Messages" modal and load current msg_saudacao
+  const openMessagesModal = async (event: Event, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedEventForMessages(event);
+    // fetch the current message from DB to avoid stale state
+    const { data, error } = await supabase
+      .from('events')
+      .select('msg_saudacao')
+      .eq('id', event.id)
+      .single();
+    if (error) {
+      toast({ title: 'Erro', description: 'Não foi possível carregar a mensagem.', variant: 'destructive' });
+      return;
+    }
+    setMessagesText(data?.msg_saudacao || '');
+    setIsMessagesDialogOpen(true);
+  };
+
+  const handleSaveMessages = async () => {
+    if (!selectedEventForMessages) return;
+    const { error } = await supabase
+      .from('events')
+      .update({ msg_saudacao: messagesText })
+      .eq('id', selectedEventForMessages.id);
+    if (error) {
+      toast({ title: 'Erro', description: 'Falha ao salvar a mensagem.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: 'Mensagem atualizada com sucesso.' });
+      setIsMessagesDialogOpen(false);
+      setSelectedEventForMessages(null);
+      setMessagesText('');
+      fetchEvents();
+    }
   };
 
   const openEditEventModal = (event: Event) => {
@@ -605,17 +647,27 @@ export default function Events() {
                     Valor do voto: R$ {event.vote_value}
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openCategoriesModal(event.id);
-                  }}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Categorias
-                </Button>
+                <div className="flex flex-col items-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openCategoriesModal(event.id);
+                    }}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Categorias
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => openMessagesModal(event, e)}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Mensagens
+                  </Button>
+                </div>
               </div>
             </CardHeader>
           </Card>
@@ -715,6 +767,33 @@ export default function Events() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Messages Modal */}
+      <Dialog open={isMessagesDialogOpen} onOpenChange={setIsMessagesDialogOpen}>
+        <DialogContent className="mx-4 my-4 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Mensagem do Evento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="event_message">Mensagem de Saudação</Label>
+            <Textarea
+              id="event_message"
+              placeholder="Digite a mensagem de saudação que será usada neste evento..."
+              value={messagesText}
+              onChange={(e) => setMessagesText(e.target.value)}
+              rows={6}
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsMessagesDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveMessages}>
+              Salvar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
