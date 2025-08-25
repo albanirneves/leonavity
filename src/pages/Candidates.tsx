@@ -590,22 +590,20 @@ export default function Candidates() {
   return (
     <div className="p-4 md:p-6 max-w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold">Candidatas</h1>
-        
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar candidata..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full sm:w-64"
+              className="pl-10 w-full"
             />
           </div>
 
           <Select value={selectedEvent} onValueChange={setSelectedEvent}>
-            <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Selecione um evento" />
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Evento" />
             </SelectTrigger>
             <SelectContent className="z-50 bg-popover">
               {events.map((event) => (
@@ -617,8 +615,8 @@ export default function Candidates() {
           </Select>
 
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Todas as categorias" />
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent className="z-50 bg-popover">
               <SelectItem value="all">Todas as categorias</SelectItem>
@@ -629,146 +627,14 @@ export default function Candidates() {
               ))}
             </SelectContent>
           </Select>
-
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogContent className="max-w-2xl mx-4 my-4 max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Adicionar Candidata</DialogTitle>
-              </DialogHeader>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="new_event">Evento *</Label>
-                    <Select value={newCandidateForm.id_event} onValueChange={(value) => {
-                      setNewCandidateForm({ ...newCandidateForm, id_event: value, id_category: '' });
-                      if (value) fetchCategories(parseInt(value));
-                    }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecionar evento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {events.map((event) => (
-                          <SelectItem key={event.id} value={event.id.toString()}>
-                            {event.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="new_category">Categoria *</Label>
-                    <Select value={newCandidateForm.id_category} onValueChange={(value) => setNewCandidateForm({ ...newCandidateForm, id_category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecionar categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id_category.toString()}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="new_id_candidate">ID da Candidata *</Label>
-                    <Input
-                      id="new_id_candidate"
-                      type="number"
-                      value={newCandidateForm.id_candidate}
-                      onChange={(e) => setNewCandidateForm({ ...newCandidateForm, id_candidate: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="new_name">Nome de Exibição *</Label>
-                    <Input
-                      id="new_name"
-                      value={newCandidateForm.name}
-                      onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="new_name_complete">Nome Completo</Label>
-                    <Input
-                      id="new_name_complete"
-                      value={newCandidateForm.name_complete}
-                      onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name_complete: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label>Foto da Candidata</Label>
-                    <div className="mt-2">
-                      {photoPreview ? (
-                        <img 
-                          src={photoPreview} 
-                          alt="Preview"
-                          className="w-full aspect-[4/5] object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-full aspect-[4/5] bg-muted rounded-lg flex items-center justify-center">
-                          <span className="text-muted-foreground">Nenhuma foto selecionada</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="candidate-photo-upload">Selecionar Foto</Label>
-                    <div className="mt-2">
-                      <input
-                        id="candidate-photo-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoSelect}
-                        disabled={uploading}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('candidate-photo-upload')?.click()}
-                        disabled={uploading}
-                        className="w-full"
-                      >
-                        <Camera className="h-4 w-4 mr-2" />
-                        Selecionar Foto
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 mt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsAddModalOpen(false);
-                    setSelectedPhoto(null);
-                    setPhotoPreview(null);
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button onClick={handleCreateCandidate} disabled={uploading}>
-                  {uploading ? 'Criando...' : 'Criar Candidata'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Button onClick={() => setIsAddModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Candidata
-          </Button>
         </div>
+      </div>
+      
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setIsAddModalOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar Candidata
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -819,6 +685,141 @@ export default function Candidates() {
           </Card>
         ))}
       </div>
+
+      {/* Add Candidate Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="max-w-2xl mx-4 my-4 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Adicionar Candidata</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="new_event">Evento *</Label>
+                <Select value={newCandidateForm.id_event} onValueChange={(value) => {
+                  setNewCandidateForm({ ...newCandidateForm, id_event: value, id_category: '' });
+                  if (value) fetchCategories(parseInt(value));
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar evento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {events.map((event) => (
+                      <SelectItem key={event.id} value={event.id.toString()}>
+                        {event.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="new_category">Categoria *</Label>
+                <Select value={newCandidateForm.id_category} onValueChange={(value) => setNewCandidateForm({ ...newCandidateForm, id_category: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id_category.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="new_id_candidate">ID da Candidata *</Label>
+                <Input
+                  id="new_id_candidate"
+                  type="number"
+                  value={newCandidateForm.id_candidate}
+                  onChange={(e) => setNewCandidateForm({ ...newCandidateForm, id_candidate: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="new_name">Nome de Exibição *</Label>
+                <Input
+                  id="new_name"
+                  value={newCandidateForm.name}
+                  onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="new_name_complete">Nome Completo</Label>
+                <Input
+                  id="new_name_complete"
+                  value={newCandidateForm.name_complete}
+                  onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name_complete: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label>Foto da Candidata</Label>
+                <div className="mt-2">
+                  {photoPreview ? (
+                    <img 
+                      src={photoPreview} 
+                      alt="Preview"
+                      className="w-full aspect-[4/5] object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full aspect-[4/5] bg-muted rounded-lg flex items-center justify-center">
+                      <span className="text-muted-foreground">Nenhuma foto selecionada</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="candidate-photo-upload">Selecionar Foto</Label>
+                <div className="mt-2">
+                  <input
+                    id="candidate-photo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoSelect}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('candidate-photo-upload')?.click()}
+                    disabled={uploading}
+                    className="w-full"
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    Selecionar Foto
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setSelectedPhoto(null);
+                setPhotoPreview(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateCandidate} disabled={uploading}>
+              {uploading ? 'Criando...' : 'Criar Candidata'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Candidate Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
