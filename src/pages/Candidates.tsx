@@ -688,10 +688,10 @@ export default function Candidates() {
                         <img 
                           src={photoPreview} 
                           alt="Preview"
-                          className="w-full h-64 object-cover rounded-lg"
+                          className="w-full aspect-[4/5] object-cover rounded-lg"
                         />
                       ) : (
-                        <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
+                        <div className="w-full aspect-[4/5] bg-muted rounded-lg flex items-center justify-center">
                           <span className="text-muted-foreground">Nenhuma foto selecionada</span>
                         </div>
                       )}
@@ -894,10 +894,10 @@ export default function Candidates() {
                         <img 
                           src={selectedCandidate.photo_url} 
                           alt={selectedCandidate.name}
-                          className="w-full h-64 object-cover rounded-lg"
+                          className="w-full aspect-[4/5] object-cover rounded-lg"
                         />
                       ) : (
-                        <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
+                        <div className="w-full aspect-[4/5] bg-muted rounded-lg flex items-center justify-center">
                           <span className="text-muted-foreground">Sem foto</span>
                         </div>
                       )}
