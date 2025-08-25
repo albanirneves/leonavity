@@ -646,22 +646,24 @@ export default function Candidates() {
             onClick={() => openCandidateModal(candidate)}
           >
             <div className="flex gap-4 p-4">
-              <div className="w-20 h-24 flex-shrink-0">
+              <div className="w-24 h-32 flex-shrink-0">
                 <CandidateImage
                   src={candidate.photo_url}
                   alt={`Foto de ${candidate.name}`}
                   className="w-full h-full object-cover rounded-lg"
                 />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="min-w-0 flex-1">
-                    <CardTitle className="text-base truncate">#{candidate.id_candidate} - {candidate.name}</CardTitle>
-                    <p className="text-xs text-muted-foreground">
+              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="min-w-0 flex-1 pr-2">
+                    <CardTitle className="text-sm font-semibold leading-tight mb-1">
+                      #{candidate.id_candidate} - {candidate.name}
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground leading-tight">
                       {candidate.event_name} - {candidate.category_name}
                     </p>
                   </div>
-                  <div className="flex gap-1 ml-2">
+                  <div className="flex gap-1 ml-2 flex-shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
@@ -669,9 +671,9 @@ export default function Candidates() {
                         e.stopPropagation();
                         openCandidateModal(candidate);
                       }}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -679,13 +681,13 @@ export default function Candidates() {
                         e.stopPropagation();
                         handleDeleteCandidate(candidate);
                       }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <Users className="h-3 w-3" />
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4" />
                   <span>{candidate.votes_count} votos</span>
                 </div>
               </div>
