@@ -154,7 +154,7 @@ export default function Candidates() {
       const { data: candidatesData, error: candidatesError } = await supabase
         .from('candidates')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('id_candidate', { ascending: true });
 
       if (candidatesError) throw candidatesError;
 
@@ -230,8 +230,8 @@ export default function Candidates() {
       );
     }
     
-    // Sort by number of votes (descending - most votes first)
-    filtered = filtered.sort((a, b) => b.votes_count - a.votes_count);
+    // Sort by candidate ID (ascending - maintain order)
+    filtered = filtered.sort((a, b) => a.id_candidate - b.id_candidate);
     
     setFilteredCandidates(filtered);
   };
