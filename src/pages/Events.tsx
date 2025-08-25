@@ -770,7 +770,7 @@ export default function Events() {
 
       {/* Messages Modal */}
       <Dialog open={isMessagesDialogOpen} onOpenChange={setIsMessagesDialogOpen}>
-        <DialogContent className="mx-4 my-4 max-w-2xl">
+        <DialogContent className="mx-4 my-6 w-full max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Mensagem do Evento</DialogTitle>
           </DialogHeader>
@@ -781,7 +781,8 @@ export default function Events() {
               placeholder="Digite a mensagem de saudação que será usada neste evento..."
               value={messagesText}
               onChange={(e) => setMessagesText(e.target.value)}
-              rows={6}
+              rows={12}
+              className="min-h-[40vh]"  /* aumenta a área de edição */
             />
           </div>
           <div className="flex justify-end gap-2 mt-4">
