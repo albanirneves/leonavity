@@ -111,8 +111,8 @@ export default function Candidates() {
   useEffect(() => {
     if (selectedEvent && selectedEvent !== '') {
       fetchCategories(parseInt(selectedEvent));
-      // Reset category selection when event changes
-      setSelectedCategory('');
+      // Reset category selection to "all" when event changes
+      setSelectedCategory('all');
     }
   }, [selectedEvent]);
 
@@ -226,8 +226,8 @@ export default function Candidates() {
       filtered = filtered.filter(c => c.id_event === parseInt(selectedEvent));
     }
     
-    // Filter by selected category if one is selected
-    if (selectedCategory && selectedCategory !== '') {
+    // Filter by selected category if one is selected and it's not "all"
+    if (selectedCategory && selectedCategory !== '' && selectedCategory !== 'all') {
       filtered = filtered.filter(c => c.id_category === parseInt(selectedCategory));
     }
     
@@ -621,7 +621,7 @@ export default function Candidates() {
               <SelectValue placeholder="Todas as categorias" />
             </SelectTrigger>
             <SelectContent className="z-50 bg-popover">
-              <SelectItem value="">Todas as categorias</SelectItem>
+              <SelectItem value="all">Todas as categorias</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id_category.toString()}>
                   {category.name}
