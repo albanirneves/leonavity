@@ -45,8 +45,6 @@ interface DashboardStats {
     votes: number;
     event: string;
     category: string;
-    photo_url?: string;
-    id_candidate: number;
   }>;
   recentPayments: Array<{
     id: string;
@@ -180,16 +178,7 @@ export default function Dashboard() {
 
       if (candidatesError) throw candidatesError;
 
-      // Também buscar categorias para mapear o nome da categoria
-      const { data: categoriesData } = await supabase
-        .from('categories')
-        .select('id_category, name')
-        .eq('id_event', eventId);
-      const categoriesMap = new Map(
-        (categoriesData || []).map((cat) => [cat.id_category, cat.name])
-      );
-
-      // Calcular votos por candidata e incluir foto e nome da categoria
+      // Calcular votos por candidata
       const candidatesWithVotes = await Promise.all(
         (candidatesData || []).map(async (candidate) => {
           const { data: votesData } = await supabase
@@ -200,30 +189,17 @@ export default function Dashboard() {
             .eq('id_candidate', candidate.id_candidate)
             .eq('payment_status', 'approved');
 
-          const totalVotes =
-            votesData?.reduce(
-              (sum, vote) => sum + (Number(vote.votes) || 0),
-              0
-            ) || 0;
-
-          // Obter o nome da categoria a partir do mapa ou usar o fallback.
-          const categoryName =
-            categoriesMap.get(candidate.id_category) ??
-            `Categoria ${candidate.id_category}`;
-
-          // Construir URL da foto a partir do padrão usado no ranking por categoria.
-          const photo_url = `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${candidate.id_category}_candidate_${candidate.id_candidate}.jpg`;
+          const totalVotes = votesData?.reduce((sum, vote) => sum + (Number(vote.votes) || 0), 0) || 0;
 
           return {
             name: candidate.name,
             votes: totalVotes,
             event: 'Evento Atual',
-            category: categoryName,
-            photo_url,
-            id_candidate: candidate.id_candidate,
+            category: `Categoria ${candidate.id_category}`
           };
         })
       );
+
       // Ordenar por votos e pegar top 5
       const topCandidates = candidatesWithVotes
         .sort((a, b) => b.votes - a.votes)
@@ -432,47 +408,6 @@ export default function Dashboard() {
     }).format(new Date(dateString));
   };
 
-  // Componente para renderizar cada candidata no ranking geral.
-  const TopCandidateItem = ({
-    candidate,
-    index,
-  }: {
-    candidate: {
-      name: string;
-      votes: number;
-      event: string;
-      category: string;
-      photo_url?: string;
-    };
-    index: number;
-  }) => {
-    return (
-      <div className="flex items-center justify-between gap-2 py-2">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">{index + 1}</span>
-          <img
-            src={candidate.photo_url}
-            alt={candidate.name}
-            className="w-8 h-8 rounded-full object-cover"
-            onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg';
-            }}
-          />
-          <div>
-            <div className="font-medium">{candidate.name}</div>
-            <div className="text-sm text-muted-foreground">
-              {candidate.event} • {candidate.category}
-            </div>
-          </div>
-        </div>
-        <div className="font-semibold">
-          {candidate.votes}{' '}
-          <span className="text-sm font-normal">votos</span>
-        </div>
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="container mx-auto px-6 py-6 space-y-6">
@@ -661,11 +596,23 @@ export default function Dashboard() {
               <CardContent>
                 <div className="space-y-3">
                   {stats.topCandidates.map((candidate, index) => (
-                    <TopCandidateItem
-                      candidate={candidate}
-                      index={index}
-                      key={index}
-                    />
+                    <div key={index} className="flex items-center justify-between border-b border-muted pb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium">{candidate.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {candidate.event} • {candidate.category}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-brand-600">{candidate.votes}</p>
+                        <p className="text-xs text-muted-foreground">votos</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </CardContent>
