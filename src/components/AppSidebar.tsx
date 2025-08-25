@@ -85,7 +85,7 @@ export function AppSidebar() {
       <SidebarContent className="gap-0 p-4">
         {/* Logo area */}
         <div className="flex items-center gap-3 px-2 py-4 mb-6">
-          {!isCollapsed && (
+          {(!isCollapsed || isMobile) && (
             <>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-sm font-bold text-primary-foreground">LV</span>
@@ -119,7 +119,7 @@ export function AppSidebar() {
                       }}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!isCollapsed && (
+                      {(!isCollapsed || isMobile) && (
                         <span className="font-medium text-sm">{item.title}</span>
                       )}
                     </NavLink>
