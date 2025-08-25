@@ -161,10 +161,10 @@ Deno.serve(async (req) => {
       pageSize = 9,
       outW = 1080,
       outH = 1080,
-      margin = 24,
-      gap = 16,
-      captionH = 80,
-      bgColor = "#ffffff",
+      margin = 32,
+      gap = 24,
+      captionH = 84,
+      bgColor = "#f3f4f6",
       textColor = "#111111",
       jpegQuality = 85,
     } = body;
@@ -210,8 +210,6 @@ Deno.serve(async (req) => {
 
     const font = await loadFont();
     const pages = chunk(candidates, pageSize);
-    const cols = 3;
-    const rows = 3;
 
     const bgRGBA = hexToRgba(bgColor);
     const textRGBA = hexToRgba(textColor);
@@ -225,13 +223,21 @@ Deno.serve(async (req) => {
 
       // header
       if (headerH > 0) {
-        const titleImg = await Image.renderText(font, 42, title, textRGBA);
+        const titleImg = await Image.renderText(font, 48, title, textRGBA);
         const tx = Math.floor((outW - titleImg.width) / 2);
         const ty = Math.floor((headerH - titleImg.height) / 2);
         canvas.composite(titleImg, tx, ty);
       }
 
-      // grid metrics - force square photos
+      // grid metrics - dynamic layout to reduce empty space
+      const count = page.length;
+      let cols = 3;
+      if (count <= 2) cols = count;         // 1-2 side by side
+      else if (count <= 4) cols = 2;        // 3-4 -> 2 columns
+      else if (count <= 6) cols = 3;        // 5-6 -> 3 columns
+      else cols = Math.ceil(Math.sqrt(count));
+      const rows = Math.ceil(count / cols);
+
       const availableH = outH - headerH - margin * 2 - gap * (rows - 1);
       const availableW = outW - margin * 2 - gap * (cols - 1);
       const tileW = Math.floor(availableW / cols);
@@ -265,9 +271,9 @@ Deno.serve(async (req) => {
         const photoX = x + Math.floor((tileW - photoSize) / 2);
         canvas.composite(photo, photoX, y);
 
-        // caption: "ID — Name"
-        const caption = `${String(cand.id_candidate).padStart(2, "0")} — ${cand.name ?? ""}`;
-        const textImg = await Image.renderText(font, 28, caption, textRGBA);
+        // caption: "ID - Name"
+        const caption = `${String(cand.id_candidate).padStart(2, "0")} - ${cand.name ?? ""}`;
+        const textImg = await Image.renderText(font, 30, caption, textRGBA);
         const tx = x + Math.floor((tileW - textImg.width) / 2);
         const ty = y + photoSize + Math.floor((captionH - textImg.height) / 2);
         canvas.composite(textImg, tx, ty);
