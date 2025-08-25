@@ -100,6 +100,24 @@ export default function Candidates() {
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
+  // Reset "Add Candidate" form/modal state
+  const resetAddForm = () => {
+    setNewCandidateForm({
+      name: '',
+      name_complete: '',
+      id_event: '',
+      id_category: '',
+      id_candidate: ''
+    });
+    setSelectedPhoto(null);
+    setPhotoPreview(null);
+  };
+
+  const handleOpenAddModal = () => {
+    resetAddForm();
+    setIsAddModalOpen(true);
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -632,7 +650,7 @@ export default function Candidates() {
       </div>
       
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setIsAddModalOpen(true)}>
+        <Button onClick={handleOpenAddModal}>
           <Plus className="h-4 w-4 mr-2" />
           Adicionar Candidata
         </Button>
@@ -697,7 +715,13 @@ export default function Candidates() {
       </div>
 
       {/* Add Candidate Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+      <Dialog
+        open={isAddModalOpen}
+        onOpenChange={(open) => {
+          setIsAddModalOpen(open);
+          if (open) resetAddForm();
+        }}
+      >
         <DialogContent className="max-w-2xl mx-4 my-4 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Adicionar Candidata</DialogTitle>
@@ -726,16 +750,24 @@ export default function Candidates() {
 
               <div>
                 <Label htmlFor="new_category">Categoria *</Label>
-                <Select value={newCandidateForm.id_category} onValueChange={(value) => setNewCandidateForm({ ...newCandidateForm, id_category: value })}>
+                <Select
+                  value={newCandidateForm.id_category}
+                  onValueChange={(value) =>
+                    setNewCandidateForm({ ...newCandidateForm, id_category: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecionar categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id_category.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                    {newCandidateForm.id_event &&
+                      categories
+                        .filter((c) => c.id_event === parseInt(newCandidateForm.id_event))
+                        .map((category) => (
+                          <SelectItem key={category.id} value={category.id_category.toString()}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -820,6 +852,7 @@ export default function Candidates() {
                 setIsAddModalOpen(false);
                 setSelectedPhoto(null);
                 setPhotoPreview(null);
+                resetAddForm();
               }}
             >
               Cancelar
