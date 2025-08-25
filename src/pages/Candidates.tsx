@@ -924,7 +924,7 @@ export default function Candidates() {
                     <Label>Foto da Candidata</Label>
                     <div className="mt-2">
                       <CandidateImage
-                        src={selectedCandidate.photo_url}
+                        src={photoPreview || selectedCandidate.photo_url}
                         alt={selectedCandidate.name}
                         className="w-full aspect-[4/5] object-cover rounded-lg"
                       />
