@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, Users, Search, Plus, Edit, Trash2, Camera } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CandidateImage } from '@/components/CandidateImage';
 
 interface Candidate {
   id: number;
@@ -641,9 +642,16 @@ export default function Candidates() {
         {filteredCandidates.map((candidate) => (
           <Card 
             key={candidate.id} 
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+            className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
             onClick={() => openCandidateModal(candidate)}
           >
+            <div className="aspect-[4/5] w-full">
+              <CandidateImage
+                src={candidate.photo_url}
+                alt={`Foto de ${candidate.name}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
@@ -764,7 +772,7 @@ export default function Candidates() {
                 <Label>Foto da Candidata</Label>
                 <div className="mt-2">
                   {photoPreview ? (
-                    <img 
+                    <CandidateImage
                       src={photoPreview} 
                       alt="Preview"
                       className="w-full aspect-[4/5] object-cover rounded-lg"
@@ -913,17 +921,11 @@ export default function Candidates() {
                   <div>
                     <Label>Foto da Candidata</Label>
                     <div className="mt-2">
-                      {selectedCandidate.photo_url ? (
-                        <img 
-                          src={selectedCandidate.photo_url} 
-                          alt={selectedCandidate.name}
-                          className="w-full aspect-[4/5] object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-full aspect-[4/5] bg-muted rounded-lg flex items-center justify-center">
-                          <span className="text-muted-foreground">Sem foto</span>
-                        </div>
-                      )}
+                      <CandidateImage
+                        src={selectedCandidate.photo_url}
+                        alt={selectedCandidate.name}
+                        className="w-full aspect-[4/5] object-cover rounded-lg"
+                      />
                     </div>
                   </div>
                   
