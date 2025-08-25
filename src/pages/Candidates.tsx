@@ -56,16 +56,26 @@ export default function Candidates() {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
-  // Regenerate collage banner in background (silent)
+  // Always regenerate collage banner when a candidate photo changes
   const regenerateBanner = async (eventId: number, categoryId: number) => {
     try {
-      supabase.functions.invoke('collage', {
+      toast({ title: 'Atualizando banner', description: 'Gerando colagem...', duration: 2000 });
+      const { data, error } = await supabase.functions.invoke('collage', {
         body: { event_id: eventId, category_id: categoryId },
-      }).catch(error => {
-        console.log('Background collage generation:', error);
       });
-    } catch (e) {
-      console.log('Background collage error:', e);
+      if (error || (data && data.ok === false)) {
+        console.error('Collage error:', error || data?.error);
+        toast({
+          title: 'Erro ao atualizar banner',
+          description: (error?.message || data?.error) ?? 'Tente novamente.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: 'Banner atualizado', description: 'A colagem foi gerada.' });
+      }
+    } catch (e: any) {
+      console.error('Collage invoke failed:', e);
+      toast({ title: 'Erro ao atualizar banner', description: e?.message || 'Falha na função.', variant: 'destructive' });
     }
   };
 
@@ -329,8 +339,7 @@ export default function Candidates() {
           : c
       ));
 
-      // Start background banner regeneration (don't await)
-      regenerateBanner(selectedCandidate.id_event, selectedCandidate.id_category);
+      await regenerateBanner(selectedCandidate.id_event, selectedCandidate.id_category);
 
       toast({ title: 'Sucesso', description: 'Foto enviada com sucesso' });
     } catch (error) {
@@ -378,8 +387,7 @@ export default function Candidates() {
           console.error('Error uploading photo:', uploadError);
           // Don't throw error here, just log it since candidate was created successfully
         } else {
-          // Start background banner regeneration (don't await)
-          regenerateBanner(parseInt(newCandidateForm.id_event), parseInt(newCandidateForm.id_category));
+          await regenerateBanner(parseInt(newCandidateForm.id_event), parseInt(newCandidateForm.id_category));
         }
       }
 
@@ -487,8 +495,7 @@ export default function Candidates() {
           } else {
             console.log('✅ Upload successful:', uploadData);
             toast({ title: 'Sucesso', description: 'Foto atualizada com sucesso!' });
-            // Start background banner regeneration (don't await)
-            regenerateBanner(parseInt(editCandidateForm.id_event), parseInt(editCandidateForm.id_category));
+            await regenerateBanner(parseInt(editCandidateForm.id_event), parseInt(editCandidateForm.id_category));
           }
         } catch (conversionError) {
           console.error('❌ JPEG conversion failed:', conversionError);
