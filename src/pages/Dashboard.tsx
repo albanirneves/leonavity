@@ -183,7 +183,8 @@ export default function Dashboard() {
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('id_category, name')
-        .eq('id_event', eventId);
+        .eq('id_event', eventId)
+        .order('id_category', { ascending: true });
       if (categoriesError) throw categoriesError;
       const categoryNameMap = new Map<number, string>(
         (categoriesData || []).map((c) => [c.id_category, c.name])
