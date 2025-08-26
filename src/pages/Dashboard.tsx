@@ -524,6 +524,23 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
+          <Card className="metric-card-destructive">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-sm font-medium text-white/90">
+                Taxas
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-white/80" />
+            </CardHeader>
+            <CardContent className="pb-2">
+              <div className="text-2xl font-bold text-white">
+                {formatCurrency(stats.grossRevenue - stats.netRevenue)}
+              </div>
+              <p className="text-xs text-white/70">
+                Diferença entre bruto e líquido
+              </p>
+            </CardContent>
+          </Card>
+
           <Card className="metric-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
               <CardTitle className="text-sm font-medium">

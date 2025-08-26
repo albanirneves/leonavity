@@ -24,7 +24,6 @@ interface Event {
   pix_tax: number;
   card_tax: number;
   created_at: string;
-  msg_saudacao?: string;
 }
 
 interface Account {
@@ -295,14 +294,14 @@ export default function Events() {
     // fetch the current message from DB to avoid stale state
     const { data, error } = await supabase
       .from('events')
-      .select('msg_saudacao')
+      .select('name')
       .eq('id', event.id)
       .single();
     if (error) {
       toast({ title: 'Erro', description: 'Não foi possível carregar a mensagem.', variant: 'destructive' });
       return;
     }
-    setMessagesText(data?.msg_saudacao || '');
+    setMessagesText(data?.name || '');
     setIsMessagesDialogOpen(true);
   };
 
@@ -310,7 +309,7 @@ export default function Events() {
     if (!selectedEventForMessages) return;
     const { error } = await supabase
       .from('events')
-      .update({ msg_saudacao: messagesText })
+      .update({ name: messagesText })
       .eq('id', selectedEventForMessages.id);
     if (error) {
       toast({ title: 'Erro', description: 'Falha ao salvar a mensagem.', variant: 'destructive' });
