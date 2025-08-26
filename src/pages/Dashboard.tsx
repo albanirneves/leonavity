@@ -214,10 +214,9 @@ export default function Dashboard() {
         })
       );
 
-      // Ordenar por votos e pegar top 5
+      // Ordenar por votos (todas as candidatas)
       const topCandidates = candidatesWithVotes
-        .sort((a, b) => b.votes - a.votes)
-        .slice(0, 5);
+        .sort((a, b) => b.votes - a.votes);
 
       // 5. Buscar pagamentos recentes do evento
       const { data: recentPayments } = await supabase
@@ -608,8 +607,8 @@ export default function Dashboard() {
             </Card>
 
             {/* Top Candidates */}
-            <Card>
-              <CardHeader>
+            <Card className="h-[500px] flex flex-col">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="h-5 w-5" />
                   Top Candidatas
@@ -618,35 +617,41 @@ export default function Dashboard() {
                   Ranking das candidatas mais votadas
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {stats.topCandidates.map((candidate, index) => (
-                    <div key={index} className="flex items-center justify-between border-b border-muted pb-2">
-                      <div className="flex items-center gap-3">
-                        {/* Avatar da candidata em vez do número */}
-                        <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                          <img
-                            src={candidate.photo_url || '/placeholder.svg'}
-                            alt={candidate.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = '/placeholder.svg';
-                            }}
-                          />
+              <CardContent className="flex-1 overflow-hidden p-0">
+                <div className="h-full overflow-y-auto px-6 pb-6">
+                  <div className="space-y-3">
+                    {stats.topCandidates.map((candidate, index) => (
+                      <div key={index} className="flex items-center justify-between border-b border-muted pb-2">
+                        <div className="flex items-center gap-3">
+                          {/* Número da posição */}
+                          <div className="w-6 h-6 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                            {index + 1}
+                          </div>
+                          {/* Avatar da candidata */}
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                            <img
+                              src={candidate.photo_url || '/placeholder.svg'}
+                              alt={candidate.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <p className="font-medium">{candidate.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {candidate.event} • {candidate.category}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{candidate.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {candidate.event} • {candidate.category}
-                          </p>
+                        <div className="text-right">
+                          <p className="font-bold text-brand-600">{candidate.votes}</p>
+                          <p className="text-xs text-muted-foreground">votos</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-brand-600">{candidate.votes}</p>
-                        <p className="text-xs text-muted-foreground">votos</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
