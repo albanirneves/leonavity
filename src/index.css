@@ -136,6 +136,10 @@
     @apply bg-gradient-warning text-white;
   }
 
+  .metric-card-pink {
+    @apply bg-gradient-pink text-white;
+  }
+
   .metric-card-danger {
     @apply bg-gradient-danger text-white;
   }
@@ -217,7 +221,7 @@
 
   /* Layout responsivo para métricas */
   .metrics-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4;
   }
 
   /* Estilo para inputs monetários */

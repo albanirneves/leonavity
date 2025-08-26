@@ -209,6 +209,7 @@ export default {
 				'gradient-brand': 'linear-gradient(135deg, hsl(213, 94%, 68%) 0%, hsl(213, 94%, 60%) 100%)',
 				'gradient-success': 'linear-gradient(135deg, hsl(160, 84%, 39%) 0%, hsl(158, 64%, 52%) 100%)',
 				'gradient-warning': 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(43, 96%, 56%) 100%)',
+				'gradient-pink': 'linear-gradient(135deg, hsl(320, 85%, 75%) 0%, hsl(310, 80%, 68%) 100%)',
 				'gradient-danger': 'linear-gradient(135deg, hsl(0, 84%, 60%) 0%, hsl(0, 91%, 71%) 100%)',
 				'gradient-subtle': 'linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(210, 14%, 97%) 100%)',
 			}
