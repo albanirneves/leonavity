@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CustomButton } from '@/components/ui/button-variants';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -14,7 +16,8 @@ import {
   Trophy,
   Activity,
   RefreshCw,
-  Search
+  Search,
+  History
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -34,6 +37,17 @@ interface Event {
   id: number;
   name: string;
   start_vote: string;
+  end_vote: string;
+  vote_value: number;
+  pix_tax: number;
+  card_tax: number;
+}
+
+interface WeeklyHistory {
+  weekStart: string;
+  weekEnd: string;
+  totalVotes: number;
+  netRevenue: number;
 }
 
 interface DashboardStats {
@@ -93,15 +107,102 @@ export default function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [weeklyHistory, setWeeklyHistory] = useState<WeeklyHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const { toast } = useToast();
 
   const activeTab = searchParams.get('tab') || 'overview';
+
+  const generateWeeklyRanges = (startDate: string, endDate: string): Array<{start: Date, end: Date}> => {
+    const weeks = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Encontrar a primeira segunda-feira
+    const firstMonday = new Date(start);
+    const dayOfWeek = firstMonday.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+    firstMonday.setDate(firstMonday.getDate() + daysToMonday);
+    
+    let currentWeekStart = new Date(firstMonday);
+    
+    while (currentWeekStart <= end) {
+      const weekEnd = new Date(currentWeekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6); // Domingo
+      
+      if (currentWeekStart <= end) {
+        weeks.push({
+          start: new Date(currentWeekStart),
+          end: weekEnd > end ? new Date(end) : new Date(weekEnd)
+        });
+      }
+      
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    }
+    
+    return weeks;
+  };
+
+  const fetchWeeklyHistory = async () => {
+    if (!selectedEvent) return;
+    
+    setHistoryLoading(true);
+    try {
+      const event = events.find(e => e.id.toString() === selectedEvent);
+      if (!event) return;
+      
+      const weeks = generateWeeklyRanges(event.start_vote, event.end_vote);
+      const history: WeeklyHistory[] = [];
+      
+      for (const week of weeks) {
+        const { data: votes, error } = await supabase
+          .from('votes')
+          .select('votes, payment_status')
+          .eq('id_event', parseInt(selectedEvent))
+          .gte('created_at', week.start.toISOString())
+          .lte('created_at', week.end.toISOString());
+        
+        if (error) {
+          console.error('Error fetching weekly votes:', error);
+          continue;
+        }
+        
+        const totalVotes = votes?.reduce((sum, vote) => sum + (vote.votes || 0), 0) || 0;
+        
+        // Calcular faturamento líquido (mesmo cálculo do card de faturamento)
+        const paidVotes = votes?.filter(vote => vote.payment_status === 'approved') || [];
+        const grossRevenue = paidVotes.reduce((sum, vote) => sum + (vote.votes || 0), 0) * event.vote_value;
+        
+        // Aplicar taxas baseadas no payment_status (assumindo PIX como padrão)
+        const pixTaxRate = event.pix_tax / 100;
+        const netRevenue = grossRevenue * (1 - pixTaxRate);
+        
+        history.push({
+          weekStart: week.start.toLocaleDateString('pt-BR'),
+          weekEnd: week.end.toLocaleDateString('pt-BR'),
+          totalVotes,
+          netRevenue
+        });
+      }
+      
+      setWeeklyHistory(history.reverse()); // Mostrar semanas mais recentes primeiro
+    } catch (error) {
+      console.error('Error fetching weekly history:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar histórico semanal',
+        variant: 'destructive'
+      });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('id, name, start_vote')
+        .select('id, name, start_vote, end_vote, vote_value, pix_tax, card_tax')
         .order('start_vote', { ascending: false });
       
       if (error) throw error;
@@ -648,13 +749,61 @@ export default function Dashboard() {
             {/* Weekly Movement */}
             <Card className="h-[500px] flex flex-col">
               <CardHeader className="flex-shrink-0">
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Movimento Semanal
-                </CardTitle>
-                <CardDescription>
-                  Votos realizados esta semana (Segunda a Domingo)
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Movimento Semanal
+                    </CardTitle>
+                    <CardDescription>
+                      Votos realizados esta semana (Segunda a Domingo)
+                    </CardDescription>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={fetchWeeklyHistory}
+                        className="flex items-center gap-2"
+                      >
+                        <History className="h-4 w-4" />
+                        Histórico
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle>Histórico Semanal</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex-1 overflow-y-auto">
+                        {historyLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <LoadingSpinner />
+                          </div>
+                        ) : weeklyHistory.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            Nenhum dado encontrado
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {weeklyHistory.map((week, index) => (
+                              <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                                <div>
+                                  <p className="font-medium">
+                                    Semana {week.weekStart} a {week.weekEnd}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {week.totalVotes} voto{week.totalVotes !== 1 ? 's' : ''} - R$ {week.netRevenue.toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden p-0">
                 <div className="h-full overflow-y-auto px-6 pb-6">
