@@ -127,16 +127,18 @@ export default function Dashboard() {
       setLoading(true);
       const eventId = parseInt(selectedEvent);
       
-      // 1. Buscar votos ativos (approved) do evento selecionado
+      // 1. Buscar TODOS os votos aprovados do evento (somente colunas necessárias)
       const { data: activeVotes, error: votesError } = await supabase
         .from('votes')
-        .select('*')
+        .select('votes, changed_to_card')
         .eq('id_event', eventId)
-        .eq('payment_status', 'approved');
+        .eq('payment_status', 'approved')
+        // evita o limite padrão (~1.000 linhas) do PostgREST
+        .range(0, 999999);
 
       if (votesError) throw votesError;
 
-      const votesActiveCount = activeVotes?.length || 0;
+      const votesActiveCount = (activeVotes ?? []).reduce((sum, v) => sum + (Number(v.votes) || 0), 0);
 
       // 2. Buscar dados do evento para calcular faturamento
       const { data: eventData, error: eventError } = await supabase
