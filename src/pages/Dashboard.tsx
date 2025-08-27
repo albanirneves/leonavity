@@ -185,7 +185,8 @@ export default function Dashboard() {
         });
       }
       
-      setWeeklyHistory(history); // Mostrar semanas mais recentes primeiro
+      //setWeeklyHistory(history.reverse()); // Mostrar semanas mais recentes primeiro
+      setWeeklyHistory(history);
     } catch (error) {
       console.error('Error fetching weekly history:', error);
       toast({
@@ -753,7 +754,7 @@ export default function Dashboard() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Calendar className="h-5 w-5" />
-                      Movimento Semanal
+                      Últimos Votos
                     </CardTitle>
                     <CardDescription>
                       Votos realizados esta semana (Segunda a Domingo)
