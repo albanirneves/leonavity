@@ -294,7 +294,7 @@ export default function Events() {
     // fetch the current message from DB to avoid stale state
     const { data, error } = await supabase
       .from('events')
-      .select('name')
+      .select('msg_saudacao')
       .eq('id', event.id)
       .single();
     if (error) {
@@ -309,7 +309,7 @@ export default function Events() {
     if (!selectedEventForMessages) return;
     const { error } = await supabase
       .from('events')
-      .update({ name: messagesText })
+      .update({ msg_saudacao: messagesText })
       .eq('id', selectedEventForMessages.id);
     if (error) {
       toast({ title: 'Erro', description: 'Falha ao salvar a mensagem.', variant: 'destructive' });
