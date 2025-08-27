@@ -658,15 +658,15 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden p-0">
                 <div className="h-full overflow-y-auto px-6 pb-6">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {stats.weeklyMovement.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         Nenhum voto encontrado esta semana
                       </div>
                     ) : (
                       stats.weeklyMovement.map((vote) => (
-                        <div key={vote.id} className="flex items-center gap-3 border-b border-muted pb-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                        <div key={vote.id} className="flex items-start gap-3 border-b border-muted pb-4">
+                          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-muted flex-shrink-0">
                             <img
                               src={vote.candidate_photo}
                               alt={vote.candidate_name}
@@ -676,21 +676,23 @@ export default function Dashboard() {
                               }}
                             />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium truncate">{vote.candidate_name}</p>
-                              <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full">
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                              <p className="font-medium text-sm md:text-base leading-tight">
+                                {vote.candidate_name}
+                              </p>
+                              <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full w-fit">
                                 {vote.category_name}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>{formatPhone(vote.phone)}</span>
-                              <span>•</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs md:text-sm text-muted-foreground">
+                              <span className="font-mono">{formatPhone(vote.phone)}</span>
+                              <span className="hidden sm:inline">•</span>
                               <span>{vote.votes} voto{vote.votes > 1 ? 's' : ''}</span>
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground leading-tight">
                               {formatRelativeTime(vote.created_at)}
                             </p>
                           </div>
