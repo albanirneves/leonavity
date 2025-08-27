@@ -201,7 +201,8 @@ export default function Dashboard() {
             .eq('id_event', candidate.id_event)
             .eq('id_category', candidate.id_category)
             .eq('id_candidate', candidate.id_candidate)
-            .eq('payment_status', 'approved');
+            .eq('payment_status', 'approved')
+            .range(0, 999999);
 
           const totalVotes = votesData?.reduce((sum, vote) => sum + (Number(vote.votes) || 0), 0) || 0;
 
@@ -259,7 +260,8 @@ export default function Dashboard() {
           .eq('id_event', eventId)
           .eq('payment_status', 'approved')
           .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString());
+          .lte('created_at', endDate.toISOString())
+          .range(0, 999999);
 
         // Processar dados para os gráficos
         revenueChart = dates.map(date => {
@@ -305,7 +307,8 @@ export default function Dashboard() {
                 .eq('id_event', eventId)
                 .eq('id_category', category.id_category)
                 .eq('id_candidate', candidate.id_candidate)
-                .eq('payment_status', 'approved');
+                .eq('payment_status', 'approved')
+                .range(0, 999999);
 
               const totalVotes = votesData?.reduce((sum, vote) => sum + (Number(vote.votes) || 0), 0) || 0;
 
