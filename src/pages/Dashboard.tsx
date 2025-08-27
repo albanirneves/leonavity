@@ -185,7 +185,7 @@ export default function Dashboard() {
         });
       }
       
-      setWeeklyHistory(history.reverse()); // Mostrar semanas mais recentes primeiro
+      setWeeklyHistory(history); // Mostrar semanas mais recentes primeiro
     } catch (error) {
       console.error('Error fetching weekly history:', error);
       toast({
