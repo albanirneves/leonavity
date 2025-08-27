@@ -301,7 +301,7 @@ export default function Events() {
       toast({ title: 'Erro', description: 'Não foi possível carregar a mensagem.', variant: 'destructive' });
       return;
     }
-    setMessagesText(data?.name || '');
+    setMessagesText(data?.msg_saudacao || '');
     setIsMessagesDialogOpen(true);
   };
 
