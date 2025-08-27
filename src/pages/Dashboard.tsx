@@ -47,13 +47,14 @@ interface DashboardStats {
     category: string;
     photo_url?: string;        // photo avatar for Top Candidates
   }>;
-  recentPayments: Array<{
+  weeklyMovement: Array<{
     id: string;
     phone: string;
-    payment_status: string;
-    payment_status_detail: string;
-    created_at: string;
     votes: number;
+    created_at: string;
+    candidate_name: string;
+    candidate_photo: string;
+    category_name: string;
   }>;
   totalCandidates: number;
   revenueChart: Array<{
@@ -84,7 +85,7 @@ export default function Dashboard() {
     grossRevenue: 0,
     netRevenue: 0,
     topCandidates: [],
-    recentPayments: [],
+    weeklyMovement: [],
     totalCandidates: 0,
     revenueChart: [],
     votesChart: [],
@@ -221,14 +222,57 @@ export default function Dashboard() {
       const topCandidates = candidatesWithVotes
         .sort((a, b) => b.votes - a.votes);
 
-      // 5. Buscar pagamentos recentes do evento
-      const { data: recentPayments } = await supabase
+      // 5. Buscar movimento semanal (votos da semana atual)
+      const today = new Date();
+      const currentWeekStart = new Date(today);
+      currentWeekStart.setDate(today.getDate() - today.getDay() + 1); // Segunda-feira
+      currentWeekStart.setHours(0, 0, 0, 0);
+      
+      const currentWeekEnd = new Date(currentWeekStart);
+      currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Domingo
+      currentWeekEnd.setHours(23, 59, 59, 999);
+
+      const { data: weeklyVotes } = await supabase
         .from('votes')
-        .select('id, phone, payment_status, payment_status_detail, created_at, votes')
+        .select(`
+          id, 
+          phone, 
+          votes, 
+          created_at,
+          id_candidate,
+          id_category
+        `)
         .eq('id_event', eventId)
-        .not('payment_id', 'is', null)
+        .eq('payment_status', 'approved')
+        .gte('created_at', currentWeekStart.toISOString())
+        .lte('created_at', currentWeekEnd.toISOString())
         .order('created_at', { ascending: false })
-        .limit(10);
+        .range(0, 999999);
+
+      // Enriquecer dados dos votos com informações das candidatas
+      const weeklyMovement = await Promise.all(
+        (weeklyVotes || []).map(async (vote) => {
+          const { data: candidateData } = await supabase
+            .from('candidates')
+            .select('name')
+            .eq('id_event', eventId)
+            .eq('id_category', vote.id_category)
+            .eq('id_candidate', vote.id_candidate)
+            .single();
+
+          const candidate_photo = `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${vote.id_category}_candidate_${vote.id_candidate}.jpg`;
+
+          return {
+            id: vote.id.toString(),
+            phone: vote.phone,
+            votes: vote.votes,
+            created_at: vote.created_at,
+            candidate_name: candidateData?.name || `Candidata ${vote.id_candidate}`,
+            candidate_photo,
+            category_name: categoryNameMap.get(vote.id_category) || `Categoria ${vote.id_category}`,
+          };
+        })
+      );
 
       // 6. Buscar total de candidatas do evento
       const totalCandidates = candidatesData?.length || 0;
@@ -341,10 +385,7 @@ export default function Dashboard() {
         grossRevenue,
         netRevenue,
         topCandidates,
-        recentPayments: recentPayments?.map(payment => ({
-          ...payment,
-          id: payment.id.toString()
-        })) || [],
+        weeklyMovement,
         totalCandidates,
         revenueChart,
         votesChart,
@@ -418,6 +459,43 @@ export default function Dashboard() {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(dateString));
+  };
+
+  const formatRelativeTime = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'agora';
+    if (diffInMinutes < 60) return `${diffInMinutes} minuto${diffInMinutes > 1 ? 's' : ''} atrás`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hora${diffInHours > 1 ? 's' : ''} atrás`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return 'ontem';
+    if (diffInDays < 7) {
+      const dayNames = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+      return dayNames[date.getDay()];
+    }
+    
+    return formatDate(dateString);
+  };
+
+  const formatPhone = (phone: string) => {
+    // Remove non-numeric characters
+    const numbers = phone.replace(/\D/g, '');
+    
+    // Format as (XX) XXXXX-XXXX
+    if (numbers.length === 11) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+    }
+    // Format as (XX) XXXX-XXXX for 10 digits
+    if (numbers.length === 10) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+    }
+    
+    return phone;
   };
 
   if (loading) {
@@ -567,46 +645,59 @@ export default function Dashboard() {
       {selectedEvent && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Payments */}
-            <Card>
-              <CardHeader>
+            {/* Weekly Movement */}
+            <Card className="h-[500px] flex flex-col">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Últimos Pagamentos
+                  <Calendar className="h-5 w-5" />
+                  Movimento Semanal
                 </CardTitle>
                 <CardDescription>
-                  Transações recentes no sistema
+                  Votos realizados esta semana (Segunda a Domingo)
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {stats.recentPayments.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Nenhum pagamento encontrado
-                    </div>
-                  ) : (
-                    stats.recentPayments.slice(0, 5).map((payment) => (
-                      <div key={payment.id} className="flex items-center justify-between border-b border-muted pb-2">
-                        <div>
-                          <p className="font-medium">{payment.phone}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(payment.created_at)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className={`status-badge-${
-                            payment.payment_status === 'approved' ? 'active' : 
-                            payment.payment_status === 'pending' ? 'pending' : 'error'
-                          }`}>
-                            {payment.payment_status}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {payment.votes} votos
-                          </p>
-                        </div>
+              <CardContent className="flex-1 overflow-hidden p-0">
+                <div className="h-full overflow-y-auto px-6 pb-6">
+                  <div className="space-y-3">
+                    {stats.weeklyMovement.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhum voto encontrado esta semana
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      stats.weeklyMovement.map((vote) => (
+                        <div key={vote.id} className="flex items-center gap-3 border-b border-muted pb-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                            <img
+                              src={vote.candidate_photo}
+                              alt={vote.candidate_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium truncate">{vote.candidate_name}</p>
+                              <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full">
+                                {vote.category_name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>{formatPhone(vote.phone)}</span>
+                              <span>•</span>
+                              <span>{vote.votes} voto{vote.votes > 1 ? 's' : ''}</span>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-xs text-muted-foreground">
+                              {formatRelativeTime(vote.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

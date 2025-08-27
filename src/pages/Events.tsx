@@ -301,7 +301,7 @@ export default function Events() {
       toast({ title: 'Erro', description: 'Não foi possível carregar a mensagem.', variant: 'destructive' });
       return;
     }
-    setMessagesText(data?.msg_saudacao || '');
+    setMessagesText((data as any)?.msg_saudacao || '');
     setIsMessagesDialogOpen(true);
   };
 
@@ -309,7 +309,7 @@ export default function Events() {
     if (!selectedEventForMessages) return;
     const { error } = await supabase
       .from('events')
-      .update({ msg_saudacao: messagesText })
+      .update({ msg_saudacao: messagesText } as any)
       .eq('id', selectedEventForMessages.id);
     if (error) {
       toast({ title: 'Erro', description: 'Falha ao salvar a mensagem.', variant: 'destructive' });
