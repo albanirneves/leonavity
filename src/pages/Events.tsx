@@ -473,7 +473,8 @@ export default function Events() {
                   <Input
                     id="name"
                     value={eventForm.name}
-                    onChange={(e) => setEventForm({ ...eventForm, name: e.target.value })}
+                    onChange={(e) => setEventForm({ ...eventForm, name: e.target.value.slice(0, 24) })}
+                    maxLength={24}
                   />
                 </div>
                 
@@ -602,7 +603,8 @@ export default function Events() {
               <Input
                 id="edit_name"
                 value={editEventForm.name}
-                onChange={(e) => setEditEventForm({ ...editEventForm, name: e.target.value })}
+                onChange={(e) => setEditEventForm({ ...editEventForm, name: e.target.value.slice(0, 24) })}
+                maxLength={24}
               />
             </div>
             
