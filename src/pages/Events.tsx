@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Settings, Search, Edit, Trash2, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 interface Event {
   id: number;
@@ -49,6 +51,7 @@ export default function Events() {
   const [selectedEventForEdit, setSelectedEventForEdit] = useState<Event | null>(null);
   const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [isEditEventDialogOpen, setIsEditEventDialogOpen] = useState(false);
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
@@ -97,11 +100,27 @@ export default function Events() {
   }, []);
 
   useEffect(() => {
-    const filtered = events.filter(event =>
-      event.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const now = new Date();
+    const filtered = events.filter(event => {
+      const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      if (statusFilter === 'all') return true;
+      
+      const startDate = new Date(event.start_vote);
+      const endDate = new Date(event.end_vote);
+      
+      if (statusFilter === 'active') return event.active;
+      if (statusFilter === 'inactive') return !event.active;
+      if (statusFilter === 'finished') return now > endDate;
+      if (statusFilter === 'scheduled') return now < startDate;
+      if (statusFilter === 'running') return now >= startDate && now <= endDate && event.active;
+      
+      return true;
+    });
     setFilteredEvents(filtered);
-  }, [events, searchTerm]);
+  }, [events, searchTerm, statusFilter]);
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -337,6 +356,40 @@ export default function Events() {
     setIsEditEventDialogOpen(true);
   };
 
+  const getEventStatus = (event: Event) => {
+    const now = new Date();
+    const startDate = new Date(event.start_vote);
+    const endDate = new Date(event.end_vote);
+    
+    if (!event.active) {
+      return { status: 'inactive', label: 'Inativo', variant: 'secondary' as const };
+    }
+    
+    if (now > endDate) {
+      return { status: 'finished', label: 'Finalizado', variant: 'secondary' as const };
+    }
+    
+    if (now < startDate) {
+      return { status: 'scheduled', label: 'Agendado', variant: 'default' as const };
+    }
+    
+    return { status: 'running', label: 'Em andamento', variant: 'default' as const };
+  };
+
+  const handleToggleActive = async (event: Event, isActive: boolean) => {
+    const { error } = await supabase
+      .from('events')
+      .update({ active: isActive })
+      .eq('id', event.id);
+
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao atualizar status do evento', variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: `Evento ${isActive ? 'ativado' : 'desativado'} com sucesso` });
+      fetchEvents();
+    }
+  };
+
   const openEditCategoryModal = (category: Category) => {
     setSelectedCategoryForEdit(category);
     setEditCategoryName(category.name);
@@ -388,6 +441,20 @@ export default function Events() {
               className="pl-10 w-full sm:w-64"
             />
           </div>
+          
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Filtrar por status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
+              <SelectItem value="inactive">Inativos</SelectItem>
+              <SelectItem value="running">Em andamento</SelectItem>
+              <SelectItem value="scheduled">Agendados</SelectItem>
+              <SelectItem value="finished">Finalizados</SelectItem>
+            </SelectContent>
+          </Select>
           
           <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
             <DialogTrigger asChild>
@@ -637,14 +704,37 @@ export default function Events() {
           <Card key={event.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => openEditEventModal(event)}>
             <CardHeader>
               <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <CardTitle>{event.name}</CardTitle>
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-3">
+                    <CardTitle>{event.name}</CardTitle>
+                    <Badge variant={
+                      getEventStatus(event).status === 'running' ? 'default' :
+                      getEventStatus(event).status === 'scheduled' ? 'default' :
+                      'secondary'
+                    } className={
+                      getEventStatus(event).status === 'running' ? 'bg-green-100 text-green-800 border-green-200' :
+                      getEventStatus(event).status === 'scheduled' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                      'bg-gray-100 text-gray-800 border-gray-200'
+                    }>
+                      {getEventStatus(event).label}
+                    </Badge>
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     Votação: {event.start_vote ? event.start_vote.split('T')[0].split('-').reverse().join('/') : 'N/A'} - {event.end_vote ? event.end_vote.split('T')[0].split('-').reverse().join('/') : 'N/A'}
                   </p>
                   <p className="text-sm">
                     Valor do voto: R$ {event.vote_value}
                   </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-sm">Ativo:</span>
+                    <Switch
+                      checked={event.active}
+                      onCheckedChange={(checked) => {
+                        handleToggleActive(event, checked);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <Button
