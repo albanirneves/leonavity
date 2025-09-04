@@ -787,7 +787,8 @@ export default function Candidates() {
                 <Input
                   id="new_name"
                   value={newCandidateForm.name}
-                  onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name: e.target.value })}
+                  onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name: e.target.value.slice(0, 24) })}
+                  maxLength={24}
                 />
               </div>
 
@@ -881,8 +882,9 @@ export default function Candidates() {
                       id="edit-name"
                       type="text"
                       value={editCandidateForm.name}
-                      onChange={(e) => setEditCandidateForm({...editCandidateForm, name: e.target.value})}
+                      onChange={(e) => setEditCandidateForm({...editCandidateForm, name: e.target.value.slice(0, 24)})}
                       placeholder="Digite o nome da candidata"
+                      maxLength={24}
                       required
                     />
                   </div>
