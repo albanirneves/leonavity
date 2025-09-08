@@ -627,6 +627,29 @@ export default function Dashboard() {
     );
   }
 
+  // Se não há eventos cadastrados, exibir mensagem
+  if (events.length === 0 && !loading) {
+    return (
+      <div className="container mx-auto px-6 py-6">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Card className="w-full max-w-md text-center">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Calendar className="h-8 w-8 text-muted-foreground" />
+                Nenhum evento cadastrado!
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Cadastre um evento para começar a visualizar os dados.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-6 py-6 space-y-6 animate-fade-in">
       {/* Event Selection */}
