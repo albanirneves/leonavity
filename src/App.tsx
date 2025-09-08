@@ -13,6 +13,7 @@ import Dashboard from "@/pages/Dashboard";
 import Events from "@/pages/Events";
 import Candidates from "@/pages/Candidates";
 import Accounts from "@/pages/Accounts";
+import Users from "@/pages/Users";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 
@@ -55,6 +56,7 @@ const App = () => {
                 <Route path="events" element={<Events />} />
                 <Route path="candidates" element={<Candidates />} />
                 <Route path="accounts" element={<Accounts />} />
+                <Route path="users" element={<Users />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
 

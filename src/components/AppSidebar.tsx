@@ -3,11 +3,13 @@ import {
   BarChart3, 
   Calendar, 
   CreditCard,
-  Users
+  Users,
+  UserCheck
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserRole } from "@/hooks/useUserRole";
 
 import {
   Sidebar,
@@ -51,6 +53,7 @@ const navigationItems = [
 
 
 export function AppSidebar() {
+  const { isAdmin } = useUserRole();
   const { state, setOpen } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
@@ -126,6 +129,29 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* Admin only navigation */}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to="/users" 
+                      className={`${getNavClass("/users")} p-3 transition-all duration-200 group min-h-[48px] flex items-center gap-3`}
+                      title={isCollapsed ? "Usuários" : undefined}
+                      onClick={() => {
+                        if (isMobile) {
+                          setOpen(false);
+                        }
+                      }}
+                    >
+                      <UserCheck className="h-5 w-5 flex-shrink-0" />
+                      {(!isCollapsed || isMobile) && (
+                        <span className="font-medium text-sm">Usuários</span>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
