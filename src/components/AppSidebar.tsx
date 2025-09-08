@@ -91,7 +91,7 @@ export function AppSidebar() {
           {(!isCollapsed || isMobile) && (
             <>
               <div>
-                <h2 className="font-semibold text-foreground">Votação Online via WhatsApp</h2>
+                <h2 className="font-semibold text-foreground">Votação Online</h2>
                 <p className="text-xs text-muted-foreground">Admin</p>
               </div>
             </>
