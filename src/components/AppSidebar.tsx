@@ -90,11 +90,8 @@ export function AppSidebar() {
         <div className="flex items-center gap-3 px-2 py-4 mb-6">
           {(!isCollapsed || isMobile) && (
             <>
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-sm font-bold text-primary-foreground">LV</span>
-              </div>
               <div>
-                <h2 className="font-semibold text-foreground">Leona Vity</h2>
+                <h2 className="font-semibold text-foreground">Votação Online via WhatsApp</h2>
                 <p className="text-xs text-muted-foreground">Admin</p>
               </div>
             </>
