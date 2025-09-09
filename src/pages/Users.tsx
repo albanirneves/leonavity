@@ -58,7 +58,7 @@ export default function Users() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [fetchingData, setFetchingData] = useState(false);
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [dataFetched, setDataFetched] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -177,6 +177,7 @@ export default function Users() {
       });
 
       setUsers(usersWithRoles);
+      setDataFetched(true);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -186,16 +187,14 @@ export default function Users() {
       });
     } finally {
       setFetchingData(false);
-      setInitialDataLoaded(true);
     }
   };
 
-  useEffect(() => {
-    if (isAdmin && !roleLoading && !initialDataLoaded) {
-      fetchUsers();
-      fetchAccounts();
-    }
-  }, [isAdmin, roleLoading, initialDataLoaded]);
+  // Load data when component becomes visible and admin
+  if (isAdmin && !dataFetched && !fetchingData) {
+    fetchUsers();
+    fetchAccounts();
+  }
 
   const filteredUsers = users.filter(user =>
     (user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
@@ -385,7 +384,7 @@ export default function Users() {
     }
   };
 
-  if (!initialDataLoaded && fetchingData) {
+  if (!dataFetched && fetchingData) {
     return (
       <div className="container mx-auto px-6 py-6">
         <div className="flex items-center justify-center min-h-[50vh]">
@@ -639,7 +638,7 @@ export default function Users() {
         ))}
       </div>
 
-      {filteredUsers.length === 0 && initialDataLoaded && (
+      {filteredUsers.length === 0 && dataFetched && (
         <div className="text-center py-12">
           <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">Nenhum usuário encontrado</h3>
