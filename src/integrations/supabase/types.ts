@@ -129,6 +129,7 @@ export type Database = {
           name: string
           pix_tax: number | null
           start_vote: string
+          user_id: string
           vote_value: number
         }
         Insert: {
@@ -142,6 +143,7 @@ export type Database = {
           name: string
           pix_tax?: number | null
           start_vote: string
+          user_id: string
           vote_value: number
         }
         Update: {
@@ -155,6 +157,7 @@ export type Database = {
           name?: string
           pix_tax?: number | null
           start_vote?: string
+          user_id?: string
           vote_value?: number
         }
         Relationships: [

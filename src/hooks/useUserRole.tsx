@@ -5,45 +5,33 @@ import { supabase } from '@/integrations/supabase/client';
 export const useUserRole = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userAccounts, setUserAccounts] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!user) {
         setIsAdmin(false);
-        setUserAccounts([]);
         setLoading(false);
         return;
       }
 
       try {
-        // Buscar roles do usuário
+        // Buscar se o usuário tem role de admin
         const { data: roles, error } = await supabase
           .from('user_roles')
-          .select('role, id_account')
-          .eq('user_id', user.id);
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin');
 
         if (error) {
           console.error('Error fetching user roles:', error);
           setIsAdmin(false);
-          setUserAccounts([]);
         } else {
-          const adminRole = roles?.find(role => role.role === 'admin');
-          setIsAdmin(!!adminRole);
-          
-          // Se não for admin, pegar as contas associadas
-          if (!adminRole) {
-            const accounts = roles?.filter(role => role.id_account).map(role => role.id_account) || [];
-            setUserAccounts(accounts);
-          } else {
-            setUserAccounts([]);
-          }
+          setIsAdmin(roles && roles.length > 0);
         }
       } catch (error) {
         console.error('Unexpected error fetching user role:', error);
         setIsAdmin(false);
-        setUserAccounts([]);
       } finally {
         setLoading(false);
       }
@@ -52,5 +40,5 @@ export const useUserRole = () => {
     fetchUserRole();
   }, [user]);
 
-  return { isAdmin, userAccounts, loading };
+  return { isAdmin, loading };
 };

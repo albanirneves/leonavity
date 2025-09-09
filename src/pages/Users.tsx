@@ -43,8 +43,6 @@ interface UserProfile {
   email?: string;
   roles: Array<{
     role: string;
-    id_account: number | null;
-    account_name?: string;
   }>;
 }
 
@@ -66,13 +64,12 @@ export default function Users() {
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const { toast } = useToast();
 
-  // Form state
+  // Form state - removendo campos relacionados a contas
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     display_name: '',
-    role: 'user' as 'admin' | 'user',
-    id_account: ''
+    role: 'user' as 'admin' | 'user'
   });
 
   // Verificar se o usuário é admin antes de mostrar a página
@@ -137,14 +134,7 @@ export default function Users() {
       // Buscar roles dos usuários
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          role,
-          id_account,
-          accounts:id_account (
-            name
-          )
-        `);
+        .select('user_id, role');
 
       if (rolesError) throw rolesError;
 
@@ -162,9 +152,7 @@ export default function Users() {
         const roles = (userRoles || [])
           .filter(role => role.user_id === profile.id)
           .map(role => ({
-            role: role.role,
-            id_account: role.id_account,
-            account_name: role.accounts?.name || null
+            role: role.role
           }));
 
         const authUser = authUsers?.users.find(user => user.id === profile.id);
@@ -224,15 +212,11 @@ export default function Users() {
           .delete()
           .eq('user_id', editingUser.id);
 
-        // Adicionar nova role
-        const roleData: any = {
+        // Adicionar nova role (removendo lógica de id_account)
+        const roleData = {
           user_id: editingUser.id,
           role: formData.role
         };
-
-        if (formData.role === 'user' && formData.id_account) {
-          roleData.id_account = parseInt(formData.id_account);
-        }
 
         const { error: roleError } = await supabase
           .from('user_roles')
@@ -265,15 +249,11 @@ export default function Users() {
 
         if (authError) throw authError;
 
-        // Criar role para o novo usuário
-        const roleData: any = {
+        // Criar role para o novo usuário (removendo lógica de id_account)
+        const roleData = {
           user_id: newUser.user.id,
           role: formData.role
         };
-
-        if (formData.role === 'user' && formData.id_account) {
-          roleData.id_account = parseInt(formData.id_account);
-        }
 
         const { error: roleError } = await supabase
           .from('user_roles')
@@ -292,8 +272,7 @@ export default function Users() {
         email: '',
         password: '',
         display_name: '',
-        role: 'user',
-        id_account: ''
+        role: 'user'
       });
       setEditingUser(null);
       setDialogOpen(false);
@@ -317,8 +296,7 @@ export default function Users() {
       email: user.email || '',
       password: '',
       display_name: user.display_name || '',
-      role: mainRole?.role as 'admin' | 'user' || 'user',
-      id_account: mainRole?.id_account?.toString() || ''
+      role: mainRole?.role as 'admin' | 'user' || 'user'
     });
     setDialogOpen(true);
   };
@@ -431,8 +409,7 @@ export default function Users() {
                   email: '',
                   password: '',
                   display_name: '',
-                  role: 'user',
-                  id_account: ''
+                  role: 'user'
                 });
               }}
             >
@@ -506,7 +483,7 @@ export default function Users() {
                 </Label>
                 <Select 
                   value={formData.role} 
-                  onValueChange={(value: 'admin' | 'user') => setFormData(prev => ({ ...prev, role: value, id_account: value === 'admin' ? '' : prev.id_account }))}
+                  onValueChange={(value: 'admin' | 'user') => setFormData(prev => ({ ...prev, role: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
@@ -518,28 +495,6 @@ export default function Users() {
                 </Select>
               </div>
 
-              {formData.role === 'user' && (
-                <div className="space-y-2">
-                  <Label htmlFor="account" className="text-sm font-medium">
-                    Conta Associada *
-                  </Label>
-                  <Select 
-                    value={formData.id_account} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, id_account: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a conta" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id.toString()}>
-                          {account.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
 
               <div className="flex justify-end gap-3 pt-4">
                 <CustomButton 
@@ -617,7 +572,6 @@ export default function Users() {
                       className="text-xs"
                     >
                       {role.role === 'admin' ? 'Admin' : 'Usuário'}
-                      {role.account_name && ` - ${role.account_name}`}
                     </Badge>
                   ))}
                   {user.roles.length === 0 && (

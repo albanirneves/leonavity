@@ -14,6 +14,7 @@ import { Plus, Settings, Search, Edit, Trash2, MessageSquare } from 'lucide-reac
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { useAuth } from '@/lib/auth';
 
 interface Event {
   id: number;
@@ -42,6 +43,7 @@ interface Category {
 }
 
 export default function Events() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
@@ -76,7 +78,8 @@ export default function Events() {
     active: true,
     id_account: '',
     pix_tax: '',
-    card_tax: ''
+    card_tax: '',
+    msg_saudacao: ''
   });
 
   const [editEventForm, setEditEventForm] = useState({
@@ -179,7 +182,9 @@ export default function Events() {
         active: eventForm.active,
         id_account: parseInt(eventForm.id_account),
         pix_tax: eventForm.pix_tax ? parseFloat(eventForm.pix_tax) : 0,
-        card_tax: eventForm.card_tax ? parseFloat(eventForm.card_tax) : 0
+        card_tax: eventForm.card_tax ? parseFloat(eventForm.card_tax) : 0,
+        msg_saudacao: eventForm.msg_saudacao || '',
+        user_id: user?.id
       }]);
 
     if (error) {
@@ -228,7 +233,8 @@ export default function Events() {
       active: true,
       id_account: '',
       pix_tax: '',
-      card_tax: ''
+      card_tax: '',
+      msg_saudacao: ''
     });
   };
 

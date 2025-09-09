@@ -4,7 +4,8 @@ import {
   Calendar, 
   CreditCard,
   Users,
-  UserCheck
+  UserCheck,
+  Shield
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect } from "react";
@@ -24,7 +25,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const navigationItems = [
+const getNavigationItems = (isAdmin: boolean) => [
   { 
     title: "Dashboard", 
     url: "/dashboard", 
@@ -43,12 +44,20 @@ const navigationItems = [
     icon: Users,
     description: "Gerenciar candidatas"
   },
-  { 
-    title: "Contas", 
-    url: "/accounts", 
-    icon: CreditCard,
-    description: "Contas de pagamento"
-  },
+  ...(isAdmin ? [
+    { 
+      title: "Contas", 
+      url: "/accounts", 
+      icon: CreditCard,
+      description: "Contas de pagamento"
+    },
+    { 
+      title: "Usuários", 
+      url: "/users", 
+      icon: Shield,
+      description: "Gerenciar usuários do sistema"
+    }
+  ] : [])
 ];
 
 
@@ -105,7 +114,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
-              {navigationItems.map((item) => (
+              {getNavigationItems(isAdmin).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
@@ -126,29 +135,6 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              
-              {/* Admin only navigation */}
-              {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to="/users" 
-                      className={`${getNavClass("/users")} p-3 transition-all duration-200 group min-h-[48px] flex items-center gap-3`}
-                      title={isCollapsed ? "Usuários" : undefined}
-                      onClick={() => {
-                        if (isMobile) {
-                          setOpen(false);
-                        }
-                      }}
-                    >
-                      <UserCheck className="h-5 w-5 flex-shrink-0" />
-                      {(!isCollapsed || isMobile) && (
-                        <span className="font-medium text-sm">Usuários</span>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
