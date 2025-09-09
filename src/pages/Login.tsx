@@ -77,8 +77,11 @@ export default function Login() {
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
+          <div className="mx-auto w-16 h-16 bg-gradient-brand rounded-2xl flex items-center justify-center mb-4">
+            <span className="text-2xl font-bold text-white">LV</span>
+          </div>
           <h1 className="text-3xl font-bold text-gradient-brand">
-            Votação Online via WhatsApp
+            Leona Vity Eventos
           </h1>
           <p className="text-muted-foreground">
             {isResetMode ? 'Recuperar senha' : 'Acesse o painel administrativo'}
@@ -193,7 +196,7 @@ export default function Login() {
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
           <p>Sistema administrativo para gerenciamento de eventos</p>
-          <p className="mt-1">© 2025 Votação Online via WhatsApp</p>
+          <p className="mt-1">© 2024 Leona Vity Eventos</p>
         </div>
       </div>
     </div>

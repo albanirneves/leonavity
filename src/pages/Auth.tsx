@@ -46,7 +46,7 @@ export default function Auth() {
 
   useEffect(() => {
     // SEO
-    document.title = 'Autenticação | Votação Online via WhatsApp';
+    document.title = 'Autenticação | Leona Vity Eventos';
     const canonical = document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
     const href = window.location.origin + '/auth';
     if (canonical) canonical.href = href; else {
@@ -135,7 +135,10 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
       <main className="w-full max-w-md space-y-6">
         <header className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-gradient-brand">Votação Online via WhatsApp Admin</h1>
+          <div className="mx-auto w-16 h-16 bg-gradient-brand rounded-2xl flex items-center justify-center mb-4" aria-hidden>
+            <span className="text-2xl font-bold text-white">LV</span>
+          </div>
+          <h1 className="text-3xl font-bold text-gradient-brand">Leona Vity Admin</h1>
           <p className="text-muted-foreground">{Description}</p>
         </header>
 
@@ -260,7 +263,7 @@ export default function Auth() {
 
         <footer className="text-center text-sm text-muted-foreground">
           <p>Sistema administrativo para gerenciamento de eventos</p>
-          <p className="mt-1">© 2025 Votação Online via WhatsApp</p>
+          <p className="mt-1">© 2025 Leona Vity Eventos</p>
         </footer>
       </main>
     </div>

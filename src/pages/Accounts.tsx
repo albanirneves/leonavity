@@ -41,9 +41,7 @@ interface Account {
   name: string;
   marketplace: string;
   access_token: string;
-  whatsapp_token: string | null;
-  whatsapp_app_id: string | null;
-  whatsapp_number: string | null;
+  evolution_instance: string | null;
   created_at: string;
 }
 
@@ -64,9 +62,7 @@ export default function Accounts() {
     name: '',
     marketplace: '',
     access_token: '',
-    whatsapp_token: '',
-    whatsapp_app_id: '',
-    whatsapp_number: '',
+    evolution_instance: '',
   });
 
   const fetchAccounts = async () => {
@@ -103,7 +99,7 @@ export default function Accounts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.marketplace || !formData.access_token) {
+    if (!formData.name || !formData.marketplace || !formData.access_token || !formData.evolution_instance) {
       toast({
         variant: "destructive",
         title: "Campos obrigatórios",
@@ -121,9 +117,7 @@ export default function Accounts() {
             name: formData.name,
             marketplace: formData.marketplace,
             access_token: formData.access_token,
-            whatsapp_token: formData.whatsapp_token || null,
-            whatsapp_app_id: formData.whatsapp_app_id || null,
-            whatsapp_number: formData.whatsapp_number || null,
+            evolution_instance: formData.evolution_instance || null,
           })
           .eq('id', editingAccount.id);
 
@@ -141,9 +135,7 @@ export default function Accounts() {
             name: formData.name,
             marketplace: formData.marketplace,
             access_token: formData.access_token,
-            whatsapp_token: formData.whatsapp_token || null,
-            whatsapp_app_id: formData.whatsapp_app_id || null,
-            whatsapp_number: formData.whatsapp_number || null,
+            evolution_instance: formData.evolution_instance || null,
           });
 
         if (error) throw error;
@@ -159,9 +151,7 @@ export default function Accounts() {
         name: '',
         marketplace: '',
         access_token: '',
-        whatsapp_token: '',
-        whatsapp_app_id: '',
-        whatsapp_number: '',
+        evolution_instance: '',
       });
       setEditingAccount(null);
       setDialogOpen(false);
@@ -182,9 +172,7 @@ export default function Accounts() {
       name: account.name,
       marketplace: account.marketplace,
       access_token: account.access_token,
-      whatsapp_token: account.whatsapp_token || '',
-      whatsapp_app_id: account.whatsapp_app_id || '',
-      whatsapp_number: account.whatsapp_number || '',
+      evolution_instance: account.evolution_instance || '',
     });
     setDialogOpen(true);
   };
@@ -306,9 +294,7 @@ export default function Accounts() {
                     name: '',
                     marketplace: '',
                     access_token: '',
-                    whatsapp_token: '',
-                    whatsapp_app_id: '',
-                    whatsapp_number: '',
+                    evolution_instance: '',
                   });
                 }}
               >
@@ -390,21 +376,22 @@ export default function Accounts() {
                    </p>
                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp_token" className="text-sm font-medium">
-                      Token WhatsApp
-                    </Label>
-                    <Input
-                      id="whatsapp_token"
-                      placeholder="Token do WhatsApp"
-                      value={formData.whatsapp_token}
-                      onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_token: e.target.value }))}
-                      className="w-full"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Token para integração com WhatsApp (opcional)
-                    </p>
-                  </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="evolution_instance" className="text-sm font-medium">
+                     Instância Evolution *
+                   </Label>
+                   <Input
+                     id="evolution_instance"
+                     placeholder="Instância do WhatsApp"
+                     value={formData.evolution_instance}
+                     onChange={(e) => setFormData(prev => ({ ...prev, evolution_instance: e.target.value }))}
+                     className="w-full"
+                     required
+                   />
+                   <p className="text-xs text-muted-foreground">
+                     Instância para integração com WhatsApp (obrigatória)
+                   </p>
+                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
                   <CustomButton 
@@ -472,12 +459,12 @@ export default function Accounts() {
                       <CardDescription className="flex items-center gap-2">
                         <Building className="h-3 w-3" />
                         {account.marketplace}
-                         {account.whatsapp_number && (
-                           <>
-                             <span>•</span>
-                             <span>WhatsApp: {account.whatsapp_number}</span>
-                           </>
-                         )}
+                        {account.evolution_instance && (
+                          <>
+                            <span>•</span>
+                            <span>WhatsApp: {account.evolution_instance}</span>
+                          </>
+                        )}
                       </CardDescription>
                     </div>
                   </div>

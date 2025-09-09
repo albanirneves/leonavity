@@ -3,14 +3,11 @@ import {
   BarChart3, 
   Calendar, 
   CreditCard,
-  Users,
-  UserCheck,
-  Shield
+  Users
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useUserRole } from "@/hooks/useUserRole";
 
 import {
   Sidebar,
@@ -25,7 +22,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const getNavigationItems = (isAdmin: boolean) => [
+const navigationItems = [
   { 
     title: "Dashboard", 
     url: "/dashboard", 
@@ -44,25 +41,16 @@ const getNavigationItems = (isAdmin: boolean) => [
     icon: Users,
     description: "Gerenciar candidatas"
   },
-  ...(isAdmin ? [
-    { 
-      title: "Contas", 
-      url: "/accounts", 
-      icon: CreditCard,
-      description: "Contas de pagamento"
-    },
-    { 
-      title: "Usuários", 
-      url: "/users", 
-      icon: Shield,
-      description: "Gerenciar usuários do sistema"
-    }
-  ] : [])
+  { 
+    title: "Contas", 
+    url: "/accounts", 
+    icon: CreditCard,
+    description: "Contas de pagamento"
+  },
 ];
 
 
 export function AppSidebar() {
-  const { isAdmin } = useUserRole();
   const { state, setOpen } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
@@ -99,8 +87,11 @@ export function AppSidebar() {
         <div className="flex items-center gap-3 px-2 py-4 mb-6">
           {(!isCollapsed || isMobile) && (
             <>
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-sm font-bold text-primary-foreground">LV</span>
+              </div>
               <div>
-                <h2 className="font-semibold text-foreground">Votação Online</h2>
+                <h2 className="font-semibold text-foreground">Leona Vity</h2>
                 <p className="text-xs text-muted-foreground">Admin</p>
               </div>
             </>
@@ -114,7 +105,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
-              {getNavigationItems(isAdmin).map((item) => (
+              {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 

@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: 'https://votacaoonline.lovable.app/auth?type=recovery'
+        redirectTo: 'https://leonavity.lovable.app/auth?type=recovery'
       }
     });
 
@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (actionLink) {
         const url = new URL(actionLink);
         const params = new URLSearchParams(url.search);
-        params.set('redirect_to', 'https://votacaoonline.lovable.app/auth?type=recovery');
+        params.set('redirect_to', 'https://leonavity.lovable.app/auth?type=recovery');
         url.search = params.toString();
         actionLink = url.toString();
       }
@@ -100,14 +100,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email with Resend
     const emailResponse = await resend.emails.send({
-      from: "Votação Online <noreply@zappet.com.br>",
+      from: "Leona Vity <noreply@zappet.com.br>",
       to: [email],
-      subject: "Recuperação de Senha - Votação Online",
+      subject: "Recuperação de Senha - Leona Vity Eventos",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
             <h1 style="color: white; margin: 0;">Recuperação de Senha</h1>
-            <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Votação Online</p>
+            <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Leona Vity Eventos</p>
           </div>
           
           <div style="padding: 30px 20px; background: #f8f9fa;">
@@ -141,7 +141,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <div style="background: #e9ecef; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-            <p style="margin: 0;">© 2025 Votação Online - Sistema de Gerenciamento</p>
+            <p style="margin: 0;">© 2025 Leona Vity Eventos - Sistema de Gerenciamento</p>
           </div>
         </div>
       `,
