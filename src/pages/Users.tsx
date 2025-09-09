@@ -57,7 +57,8 @@ export default function Users() {
   const { isAdmin, loading: roleLoading } = useUserRole();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fetchingData, setFetchingData] = useState(false);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -123,7 +124,7 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      setLoading(true);
+      setFetchingData(true);
       
       // Primeiro, buscar perfis dos usuários
       const { data: profiles, error: profilesError } = await supabase
@@ -184,16 +185,17 @@ export default function Users() {
         description: "Não foi possível carregar a lista de usuários.",
       });
     } finally {
-      setLoading(false);
+      setFetchingData(false);
+      setInitialDataLoaded(true);
     }
   };
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin && !roleLoading && !initialDataLoaded) {
       fetchUsers();
       fetchAccounts();
     }
-  }, [isAdmin]);
+  }, [isAdmin, roleLoading, initialDataLoaded]);
 
   const filteredUsers = users.filter(user =>
     (user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
@@ -213,7 +215,7 @@ export default function Users() {
     }
 
     try {
-      setLoading(true);
+      setFetchingData(true);
 
       if (editingUser) {
         // Editar usuário existente (apenas roles e conta)
@@ -305,7 +307,7 @@ export default function Users() {
         description: error.message || "Não foi possível salvar o usuário.",
       });
     } finally {
-      setLoading(false);
+      setFetchingData(false);
     }
   };
 
@@ -326,7 +328,7 @@ export default function Users() {
     if (!userToDelete) return;
 
     try {
-      setLoading(true);
+      setFetchingData(true);
       
       // Remover roles
       await supabase
@@ -360,7 +362,7 @@ export default function Users() {
         description: error.message || "Não foi possível remover o usuário.",
       });
     } finally {
-      setLoading(false);
+      setFetchingData(false);
     }
   };
 
@@ -383,7 +385,7 @@ export default function Users() {
     }
   };
 
-  if (loading) {
+  if (!initialDataLoaded && fetchingData) {
     return (
       <div className="container mx-auto px-6 py-6">
         <div className="flex items-center justify-center min-h-[50vh]">
@@ -550,7 +552,7 @@ export default function Users() {
                 </CustomButton>
                 <CustomButton 
                   type="submit"
-                  disabled={loading}
+                  disabled={fetchingData}
                 >
                   {editingUser ? 'Atualizar' : 'Criar'} Usuário
                 </CustomButton>
@@ -637,7 +639,7 @@ export default function Users() {
         ))}
       </div>
 
-      {filteredUsers.length === 0 && !loading && (
+      {filteredUsers.length === 0 && initialDataLoaded && (
         <div className="text-center py-12">
           <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">Nenhum usuário encontrado</h3>
