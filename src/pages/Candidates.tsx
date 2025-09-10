@@ -20,6 +20,7 @@ interface Candidate {
   id_category: number;
   id_candidate: number;
   created_at: string;
+  phone?: string;
 }
 
 interface Event {
@@ -86,7 +87,10 @@ export default function Candidates() {
     name_complete: '',
     id_event: '',
     id_category: '',
-    id_candidate: ''
+    id_candidate: '',
+    phone_ddi: '+55',
+    phone_ddd: '',
+    phone_number: ''
   });
 
   const [editCandidateForm, setEditCandidateForm] = useState({
@@ -94,7 +98,10 @@ export default function Candidates() {
     name_complete: '',
     id_event: '',
     id_category: '',
-    id_candidate: ''
+    id_candidate: '',
+    phone_ddi: '+55',
+    phone_ddd: '',
+    phone_number: ''
   });
 
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
@@ -107,7 +114,10 @@ export default function Candidates() {
       name_complete: '',
       id_event: '',
       id_category: '',
-      id_candidate: ''
+      id_candidate: '',
+      phone_ddi: '+55',
+      phone_ddd: '',
+      phone_number: ''
     });
     setSelectedPhoto(null);
     setPhotoPreview(null);
@@ -285,12 +295,29 @@ export default function Candidates() {
     };
     
     setSelectedCandidate(candidateWithFreshPhoto);
+    // Parse phone number if it exists
+    let phoneDdi = '+55';
+    let phoneDdd = '';
+    let phoneNumber = '';
+    
+    if (candidate.phone) {
+      const phoneMatch = candidate.phone.match(/^\+(\d{2})(\d{2})(\d{8,9})$/);
+      if (phoneMatch) {
+        phoneDdi = `+${phoneMatch[1]}`;
+        phoneDdd = phoneMatch[2];
+        phoneNumber = phoneMatch[3];
+      }
+    }
+
     setEditCandidateForm({
       name: candidate.name,
       name_complete: candidate.name_complete || '',
       id_event: candidate.id_event.toString(),
       id_category: candidate.id_category.toString(),
-      id_candidate: candidate.id_candidate.toString()
+      id_candidate: candidate.id_candidate.toString(),
+      phone_ddi: phoneDdi,
+      phone_ddd: phoneDdd,
+      phone_number: phoneNumber
     });
     
     // Load categories for the selected event
@@ -385,6 +412,12 @@ export default function Candidates() {
     setUploading(true);
 
     try {
+      // Create phone number if provided
+      let fullPhone = null;
+      if (newCandidateForm.phone_ddd && newCandidateForm.phone_number) {
+        fullPhone = `${newCandidateForm.phone_ddi}${newCandidateForm.phone_ddd}${newCandidateForm.phone_number}`;
+      }
+
       // First, create the candidate
       const { error } = await supabase
         .from('candidates')
@@ -393,7 +426,8 @@ export default function Candidates() {
           name_complete: newCandidateForm.name_complete || null,
           id_event: parseInt(newCandidateForm.id_event),
           id_category: parseInt(newCandidateForm.id_category),
-          id_candidate: parseInt(newCandidateForm.id_candidate)
+          id_candidate: parseInt(newCandidateForm.id_candidate),
+          phone: fullPhone
         }]);
 
       if (error) throw error;
@@ -425,7 +459,10 @@ export default function Candidates() {
         name_complete: '',
         id_event: '',
         id_category: '',
-        id_candidate: ''
+        id_candidate: '',
+        phone_ddi: '+55',
+        phone_ddd: '',
+        phone_number: ''
       });
       setSelectedPhoto(null);
       setPhotoPreview(null);
@@ -470,6 +507,12 @@ export default function Candidates() {
     setUploading(true);
 
     try {
+      // Create phone number if provided
+      let fullPhone = null;
+      if (editCandidateForm.phone_ddd && editCandidateForm.phone_number) {
+        fullPhone = `${editCandidateForm.phone_ddi}${editCandidateForm.phone_ddd}${editCandidateForm.phone_number}`;
+      }
+
       const { error } = await supabase
         .from('candidates')
         .update({
@@ -477,7 +520,8 @@ export default function Candidates() {
           name_complete: editCandidateForm.name_complete || null,
           id_event: parseInt(editCandidateForm.id_event),
           id_category: parseInt(editCandidateForm.id_category),
-          id_candidate: parseInt(editCandidateForm.id_candidate)
+          id_candidate: parseInt(editCandidateForm.id_candidate),
+          phone: fullPhone
         })
         .eq('id', selectedCandidate.id);
 
@@ -800,6 +844,48 @@ export default function Candidates() {
                   onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name_complete: e.target.value })}
                 />
               </div>
+
+              {/* Phone Fields */}
+              <div>
+                <Label>Telefone</Label>
+                <div className="flex gap-2">
+                  <div className="w-20">
+                    <Select 
+                      value={newCandidateForm.phone_ddi} 
+                      onValueChange={(value) => setNewCandidateForm({ ...newCandidateForm, phone_ddi: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="+55">+55</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-20">
+                    <Input
+                      placeholder="DDD"
+                      value={newCandidateForm.phone_ddd}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 2);
+                        setNewCandidateForm({ ...newCandidateForm, phone_ddd: value });
+                      }}
+                      maxLength={2}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Número (8 ou 9 dígitos)"
+                      value={newCandidateForm.phone_number}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 9);
+                        setNewCandidateForm({ ...newCandidateForm, phone_number: value });
+                      }}
+                      maxLength={9}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -946,6 +1032,48 @@ export default function Candidates() {
                       placeholder="Digite o ID da candidata"
                       required
                     />
+                  </div>
+                  
+                  {/* Phone Fields */}
+                  <div>
+                    <Label>Telefone</Label>
+                    <div className="flex gap-2">
+                      <div className="w-20">
+                        <Select 
+                          value={editCandidateForm.phone_ddi} 
+                          onValueChange={(value) => setEditCandidateForm({ ...editCandidateForm, phone_ddi: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="+55">+55</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="w-20">
+                        <Input
+                          placeholder="DDD"
+                          value={editCandidateForm.phone_ddd}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 2);
+                            setEditCandidateForm({ ...editCandidateForm, phone_ddd: value });
+                          }}
+                          maxLength={2}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Número (8 ou 9 dígitos)"
+                          value={editCandidateForm.phone_number}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 9);
+                            setEditCandidateForm({ ...editCandidateForm, phone_number: value });
+                          }}
+                          maxLength={9}
+                        />
+                      </div>
+                    </div>
                   </div>
                   
                   <div>
