@@ -23,7 +23,7 @@ export type Database = {
           name: string
           whatsapp_app_id: string | null
           whatsapp_number: string | null
-          whatsapp_token: string | null
+          whatsapp_token: string
         }
         Insert: {
           access_token: string
@@ -33,7 +33,7 @@ export type Database = {
           name: string
           whatsapp_app_id?: string | null
           whatsapp_number?: string | null
-          whatsapp_token?: string | null
+          whatsapp_token: string
         }
         Update: {
           access_token?: string
@@ -43,7 +43,7 @@ export type Database = {
           name?: string
           whatsapp_app_id?: string | null
           whatsapp_number?: string | null
-          whatsapp_token?: string | null
+          whatsapp_token?: string
         }
         Relationships: []
       }
