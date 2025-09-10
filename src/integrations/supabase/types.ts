@@ -18,26 +18,32 @@ export type Database = {
         Row: {
           access_token: string
           created_at: string
-          evolution_instance: string | null
           id: number
           marketplace: string
           name: string
+          whatsapp_app_id: string | null
+          whatsapp_number: string | null
+          whatsapp_token: string | null
         }
         Insert: {
           access_token: string
           created_at?: string
-          evolution_instance?: string | null
           id?: number
           marketplace: string
           name: string
+          whatsapp_app_id?: string | null
+          whatsapp_number?: string | null
+          whatsapp_token?: string | null
         }
         Update: {
           access_token?: string
           created_at?: string
-          evolution_instance?: string | null
           id?: number
           marketplace?: string
           name?: string
+          whatsapp_app_id?: string | null
+          whatsapp_number?: string | null
+          whatsapp_token?: string | null
         }
         Relationships: []
       }
@@ -119,6 +125,7 @@ export type Database = {
           end_vote: string
           id: number
           id_account: number
+          msg_saudacao: string | null
           name: string
           pix_tax: number | null
           start_vote: string
@@ -131,6 +138,7 @@ export type Database = {
           end_vote: string
           id?: number
           id_account: number
+          msg_saudacao?: string | null
           name: string
           pix_tax?: number | null
           start_vote: string
@@ -143,6 +151,7 @@ export type Database = {
           end_vote?: string
           id?: number
           id_account?: number
+          msg_saudacao?: string | null
           name?: string
           pix_tax?: number | null
           start_vote?: string
@@ -205,14 +214,11 @@ export type Database = {
       }
       votes: {
         Row: {
-          candidates_sent: boolean
-          categories_sent: boolean
           change_method_sent: number
           changed_to_card: boolean
           confirm_sent: boolean
           continue_pix: boolean
           created_at: string
-          events_sent: boolean
           external_reference: string | null
           id: number
           id_candidate: number | null
@@ -230,14 +236,11 @@ export type Database = {
           votes_sent: boolean
         }
         Insert: {
-          candidates_sent?: boolean
-          categories_sent?: boolean
           change_method_sent?: number
           changed_to_card?: boolean
           confirm_sent?: boolean
           continue_pix?: boolean
           created_at?: string
-          events_sent?: boolean
           external_reference?: string | null
           id?: number
           id_candidate?: number | null
@@ -255,14 +258,11 @@ export type Database = {
           votes_sent?: boolean
         }
         Update: {
-          candidates_sent?: boolean
-          categories_sent?: boolean
           change_method_sent?: number
           changed_to_card?: boolean
           confirm_sent?: boolean
           continue_pix?: boolean
           created_at?: string
-          events_sent?: boolean
           external_reference?: string | null
           id?: number
           id_candidate?: number | null
