@@ -1025,17 +1025,6 @@ export default function Candidates() {
                     </div>
                   )}
                   
-                  <div>
-                    <Label htmlFor="edit-id-candidate">ID da Candidata *</Label>
-                    <Input
-                      id="edit-id-candidate"
-                      type="number"
-                      value={editCandidateForm.id_candidate}
-                      onChange={(e) => setEditCandidateForm({...editCandidateForm, id_candidate: e.target.value})}
-                      placeholder="Digite o ID da candidata"
-                      required
-                    />
-                  </div>
                   
                   {/* Phone Fields */}
                   <div>
