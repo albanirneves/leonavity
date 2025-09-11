@@ -878,7 +878,7 @@ export default function Candidates() {
                   </div>
                   <div className="flex-1">
                     <Input
-                      placeholder="Número (8 ou 9 dígitos)"
+                      placeholder="Número"
                       value={newCandidateForm.phone_number}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 9);
@@ -1056,7 +1056,7 @@ export default function Candidates() {
                       </div>
                       <div className="flex-1">
                         <Input
-                          placeholder="Número (8 ou 9 dígitos)"
+                          placeholder="Número"
                           value={editCandidateForm.phone_number}
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, '').slice(0, 9);
