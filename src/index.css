@@ -4,8 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System - Leona Vity Eventos Admin */
-
 @layer base {
   :root {
     --background: 0 0% 100%;

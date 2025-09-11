@@ -91,7 +91,7 @@ export function AppSidebar() {
                 <span className="text-sm font-bold text-primary-foreground">LV</span>
               </div>
               <div>
-                <h2 className="font-semibold text-foreground">Leona Vity</h2>
+                <h2 className="font-semibold text-foreground">Votação Online</h2>
                 <p className="text-xs text-muted-foreground">Admin</p>
               </div>
             </>
