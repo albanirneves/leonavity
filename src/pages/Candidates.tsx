@@ -87,7 +87,6 @@ export default function Candidates() {
     name_complete: '',
     id_event: '',
     id_category: '',
-    id_candidate: '',
     phone_ddi: '+55',
     phone_ddd: '',
     phone_number: ''
@@ -114,7 +113,6 @@ export default function Candidates() {
       name_complete: '',
       id_event: '',
       id_category: '',
-      id_candidate: '',
       phone_ddi: '+55',
       phone_ddd: '',
       phone_number: ''
@@ -404,7 +402,7 @@ export default function Candidates() {
   };
 
   const handleCreateCandidate = async () => {
-    if (!newCandidateForm.name || !newCandidateForm.id_event || !newCandidateForm.id_category || !newCandidateForm.id_candidate) {
+    if (!newCandidateForm.name || !newCandidateForm.id_event || !newCandidateForm.id_category) {
       toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios', variant: 'destructive' });
       return;
     }
@@ -412,6 +410,21 @@ export default function Candidates() {
     setUploading(true);
 
     try {
+      // Get the next sequential id_candidate for this category
+      const { data: existingCandidates, error: fetchError } = await supabase
+        .from('candidates')
+        .select('id_candidate')
+        .eq('id_event', parseInt(newCandidateForm.id_event))
+        .eq('id_category', parseInt(newCandidateForm.id_category))
+        .order('id_candidate', { ascending: false })
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+
+      const nextIdCandidate = existingCandidates && existingCandidates.length > 0 
+        ? existingCandidates[0].id_candidate + 1 
+        : 1;
+
       // Create phone number if provided
       let fullPhone = null;
       if (newCandidateForm.phone_ddd && newCandidateForm.phone_number) {
@@ -426,7 +439,7 @@ export default function Candidates() {
           name_complete: newCandidateForm.name_complete || null,
           id_event: parseInt(newCandidateForm.id_event),
           id_category: parseInt(newCandidateForm.id_category),
-          id_candidate: parseInt(newCandidateForm.id_candidate),
+          id_candidate: nextIdCandidate,
           phone: fullPhone
         }]);
 
@@ -434,7 +447,7 @@ export default function Candidates() {
 
       // If there's a photo selected, upload it
       if (selectedPhoto) {
-        const fileName = `event_${newCandidateForm.id_event}_category_${newCandidateForm.id_category}_candidate_${newCandidateForm.id_candidate}`;
+        const fileName = `event_${newCandidateForm.id_event}_category_${newCandidateForm.id_category}_candidate_${nextIdCandidate}`;
         const fileExt = 'jpg';
         const filePath = `${fileName}.${fileExt}`;
 
@@ -459,7 +472,6 @@ export default function Candidates() {
         name_complete: '',
         id_event: '',
         id_category: '',
-        id_candidate: '',
         phone_ddi: '+55',
         phone_ddd: '',
         phone_number: ''
@@ -816,15 +828,6 @@ export default function Candidates() {
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="new_id_candidate">ID da Candidata *</Label>
-                <Input
-                  id="new_id_candidate"
-                  type="number"
-                  value={newCandidateForm.id_candidate}
-                  onChange={(e) => setNewCandidateForm({ ...newCandidateForm, id_candidate: e.target.value })}
-                />
-              </div>
 
               <div>
                 <Label htmlFor="new_name">Nome de Exibição *</Label>
