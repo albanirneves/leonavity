@@ -865,7 +865,7 @@ export default function Candidates() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-20">
+                  <div className="w-16">
                     <Input
                       placeholder="DDD"
                       value={newCandidateForm.phone_ddd}
@@ -1043,7 +1043,7 @@ export default function Candidates() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="w-20">
+                      <div className="w-16">
                         <Input
                           placeholder="DDD"
                           value={editCandidateForm.phone_ddd}
