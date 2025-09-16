@@ -217,11 +217,13 @@ export type Database = {
       }
       votes: {
         Row: {
+          categories_sent: boolean | null
           change_method_sent: number
           changed_to_card: boolean
           confirm_sent: boolean
           continue_pix: boolean
           created_at: string
+          events_sent: boolean | null
           external_reference: string | null
           id: number
           id_candidate: number | null
@@ -239,11 +241,13 @@ export type Database = {
           votes_sent: boolean
         }
         Insert: {
+          categories_sent?: boolean | null
           change_method_sent?: number
           changed_to_card?: boolean
           confirm_sent?: boolean
           continue_pix?: boolean
           created_at?: string
+          events_sent?: boolean | null
           external_reference?: string | null
           id?: number
           id_candidate?: number | null
@@ -261,11 +265,13 @@ export type Database = {
           votes_sent?: boolean
         }
         Update: {
+          categories_sent?: boolean | null
           change_method_sent?: number
           changed_to_card?: boolean
           confirm_sent?: boolean
           continue_pix?: boolean
           created_at?: string
+          events_sent?: boolean | null
           external_reference?: string | null
           id?: number
           id_candidate?: number | null
