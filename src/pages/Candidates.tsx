@@ -460,10 +460,11 @@ export default function Candidates() {
         if (uploadError) {
           console.error('Error uploading photo:', uploadError);
           // Don't throw error here, just log it since candidate was created successfully
-        } else {
-          await regenerateBanner(parseInt(newCandidateForm.id_event), parseInt(newCandidateForm.id_category));
         }
       }
+
+      // Always regenerate banner after creating candidate
+      await regenerateBanner(parseInt(newCandidateForm.id_event), parseInt(newCandidateForm.id_category));
 
       toast({ title: 'Sucesso', description: 'Candidata criada com sucesso' });
       setIsAddModalOpen(false);
@@ -578,7 +579,6 @@ export default function Candidates() {
           } else {
             console.log('✅ Upload successful:', uploadData);
             toast({ title: 'Sucesso', description: 'Foto atualizada com sucesso!' });
-            await regenerateBanner(parseInt(editCandidateForm.id_event), parseInt(editCandidateForm.id_category));
           }
         } catch (conversionError) {
           console.error('❌ JPEG conversion failed:', conversionError);
@@ -588,6 +588,9 @@ export default function Candidates() {
       } else {
         console.log('ℹ️ No photo selected for upload');
       }
+
+      // Always regenerate banner after updating candidate
+      await regenerateBanner(parseInt(editCandidateForm.id_event), parseInt(editCandidateForm.id_category));
 
       toast({ title: 'Sucesso', description: 'Candidata atualizada com sucesso' });
       
