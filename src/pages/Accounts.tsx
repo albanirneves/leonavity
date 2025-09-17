@@ -384,23 +384,34 @@ export default function Accounts() {
                  </div>
 
 
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp_token" className="text-sm font-medium">
-                      Token WhatsApp *
-                    </Label>
-                    <Input
-                      id="whatsapp_token"
-                      type="password"
-                      placeholder="Token da API do WhatsApp"
-                      value={formData.whatsapp_token}
-                      onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_token: e.target.value }))}
-                      className="w-full"
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Token para autenticação na API do WhatsApp
-                    </p>
-                  </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="whatsapp_token" className="text-sm font-medium">
+                       Token WhatsApp *
+                     </Label>
+                     <div className="relative">
+                       <Input
+                         id="whatsapp_token"
+                         type={showTokenInForm ? "text" : "password"}
+                         placeholder="Token da API do WhatsApp"
+                         value={formData.whatsapp_token}
+                         onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_token: e.target.value }))}
+                         className="w-full pr-10"
+                         required
+                       />
+                       <CustomButton
+                         type="button"
+                         variant="ghost"
+                         size="sm"
+                         className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                         onClick={() => setShowTokenInForm(!showTokenInForm)}
+                       >
+                         {showTokenInForm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                       </CustomButton>
+                     </div>
+                     <p className="text-xs text-muted-foreground">
+                       Token para autenticação na API do WhatsApp
+                     </p>
+                   </div>
 
 
                   <div className="space-y-2">
