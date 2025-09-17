@@ -42,7 +42,6 @@ interface Account {
   marketplace: string;
   access_token: string;
   whatsapp_token: string;
-  whatsapp_app_id: string | null;
   whatsapp_number: string | null;
   created_at: string;
 }
@@ -65,7 +64,6 @@ export default function Accounts() {
     marketplace: '',
     access_token: '',
     whatsapp_token: '',
-    whatsapp_app_id: '',
     whatsapp_number: '',
   });
 
@@ -74,7 +72,7 @@ export default function Accounts() {
       setLoading(true);
       const { data, error } = await supabase
         .from('accounts')
-        .select('id, name, marketplace, access_token, whatsapp_token, whatsapp_app_id, whatsapp_number, created_at')
+        .select('id, name, marketplace, access_token, whatsapp_token, whatsapp_number, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -122,7 +120,6 @@ export default function Accounts() {
             marketplace: formData.marketplace,
             access_token: formData.access_token,
             whatsapp_token: formData.whatsapp_token,
-            whatsapp_app_id: formData.whatsapp_app_id || null,
             whatsapp_number: formData.whatsapp_number || null,
           })
           .eq('id', editingAccount.id);
@@ -142,7 +139,6 @@ export default function Accounts() {
             marketplace: formData.marketplace,
             access_token: formData.access_token,
             whatsapp_token: formData.whatsapp_token,
-            whatsapp_app_id: formData.whatsapp_app_id || null,
             whatsapp_number: formData.whatsapp_number || null,
           });
 
@@ -160,7 +156,6 @@ export default function Accounts() {
         marketplace: '',
         access_token: '',
         whatsapp_token: '',
-        whatsapp_app_id: '',
         whatsapp_number: '',
       });
       setEditingAccount(null);
@@ -183,7 +178,6 @@ export default function Accounts() {
       marketplace: account.marketplace,
       access_token: account.access_token,
       whatsapp_token: account.whatsapp_token || '',
-      whatsapp_app_id: account.whatsapp_app_id || '',
       whatsapp_number: account.whatsapp_number || '',
     });
     setDialogOpen(true);
@@ -307,7 +301,6 @@ export default function Accounts() {
                     marketplace: '',
                     access_token: '',
                     whatsapp_token: '',
-                    whatsapp_app_id: '',
                     whatsapp_number: '',
                   });
                 }}
@@ -409,21 +402,6 @@ export default function Accounts() {
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp_app_id" className="text-sm font-medium">
-                      WhatsApp App ID
-                    </Label>
-                    <Input
-                      id="whatsapp_app_id"
-                      placeholder="ID da aplicação WhatsApp"
-                      value={formData.whatsapp_app_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_app_id: e.target.value }))}
-                      className="w-full"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      ID da aplicação WhatsApp (opcional)
-                    </p>
-                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="whatsapp_number" className="text-sm font-medium">
