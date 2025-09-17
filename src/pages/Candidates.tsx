@@ -175,6 +175,10 @@ export default function Candidates() {
       toast({ title: 'Erro', description: 'Erro ao carregar categorias', variant: 'destructive' });
     } else {
       setCategories(data || []);
+      // Auto-select the first category if categories exist and no category is selected
+      if (data && data.length > 0 && (selectedCategory === '' || selectedCategory === 'all')) {
+        setSelectedCategory(data[0].id_category.toString());
+      }
     }
   };
 
