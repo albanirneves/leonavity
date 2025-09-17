@@ -467,7 +467,7 @@ export default function Candidates() {
         }
       }
 
-      // Always regenerate banner after creating candidate
+      // Always regenerate banner when creating new candidate (new id_candidate, id_category, name, and potentially photo)
       await regenerateBanner(parseInt(newCandidateForm.id_event), parseInt(newCandidateForm.id_category));
 
       toast({ title: 'Sucesso', description: 'Candidata criada com sucesso' });
@@ -524,6 +524,15 @@ export default function Candidates() {
     setUploading(true);
 
     try {
+      // Check if banner-affecting fields will change
+      const originalCandidate = selectedCandidate;
+      const nameChanged = editCandidateForm.name !== originalCandidate.name;
+      const idCandidateChanged = parseInt(editCandidateForm.id_candidate) !== originalCandidate.id_candidate;
+      const idCategoryChanged = parseInt(editCandidateForm.id_category) !== originalCandidate.id_category;
+      const photoChanged = selectedPhoto !== null;
+      
+      const bannerShouldRegenerate = nameChanged || idCandidateChanged || idCategoryChanged || photoChanged;
+
       // Create phone number if provided
       let fullPhone = null;
       if (editCandidateForm.phone_ddd && editCandidateForm.phone_number) {
@@ -593,8 +602,18 @@ export default function Candidates() {
         console.log('ℹ️ No photo selected for upload');
       }
 
-      // Always regenerate banner after updating candidate
-      await regenerateBanner(parseInt(editCandidateForm.id_event), parseInt(editCandidateForm.id_category));
+      // Only regenerate banner if relevant fields changed
+      if (bannerShouldRegenerate) {
+        console.log('🎨 Regenerating banner due to changes in:', {
+          nameChanged,
+          idCandidateChanged, 
+          idCategoryChanged,
+          photoChanged
+        });
+        await regenerateBanner(parseInt(editCandidateForm.id_event), parseInt(editCandidateForm.id_category));
+      } else {
+        console.log('ℹ️ Banner regeneration skipped - no relevant changes detected');
+      }
 
       toast({ title: 'Sucesso', description: 'Candidata atualizada com sucesso' });
       
