@@ -21,7 +21,6 @@ export type Database = {
           id: number
           marketplace: string
           name: string
-          whatsapp_app_id: string | null
           whatsapp_number: string | null
           whatsapp_token: string
         }
@@ -31,7 +30,6 @@ export type Database = {
           id?: number
           marketplace: string
           name: string
-          whatsapp_app_id?: string | null
           whatsapp_number?: string | null
           whatsapp_token: string
         }
@@ -41,7 +39,6 @@ export type Database = {
           id?: number
           marketplace?: string
           name?: string
-          whatsapp_app_id?: string | null
           whatsapp_number?: string | null
           whatsapp_token?: string
         }
@@ -217,6 +214,7 @@ export type Database = {
       }
       votes: {
         Row: {
+          candidates_sent: boolean | null
           categories_sent: boolean | null
           change_method_sent: number
           changed_to_card: boolean
@@ -241,6 +239,7 @@ export type Database = {
           votes_sent: boolean
         }
         Insert: {
+          candidates_sent?: boolean | null
           categories_sent?: boolean | null
           change_method_sent?: number
           changed_to_card?: boolean
@@ -265,6 +264,7 @@ export type Database = {
           votes_sent?: boolean
         }
         Update: {
+          candidates_sent?: boolean | null
           categories_sent?: boolean | null
           change_method_sent?: number
           changed_to_card?: boolean
