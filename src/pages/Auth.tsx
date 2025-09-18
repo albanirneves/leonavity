@@ -8,6 +8,7 @@ import { CustomButton } from '@/components/ui/button-variants';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import logoImage from '@/assets/logo-crown.jpg';
 
 export default function Auth() {
   const location = useLocation();
@@ -135,8 +136,8 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
       <main className="w-full max-w-md space-y-6">
         <header className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-gradient-brand rounded-2xl flex items-center justify-center mb-4" aria-hidden>
-            <span className="text-2xl font-bold text-white">LV</span>
+          <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 overflow-hidden" aria-hidden>
+            <img src={logoImage} alt="Logo Votação via WhatsApp" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-bold text-gradient-brand">Votação Online via WhatsApp</h1>
           <p className="text-muted-foreground">{Description}</p>

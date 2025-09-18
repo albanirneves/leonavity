@@ -8,6 +8,7 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import logoImage from '@/assets/logo-crown.jpg';
 
 import {
   Sidebar,
@@ -87,8 +88,8 @@ export function AppSidebar() {
         <div className="flex items-center gap-3 px-2 py-4 mb-6">
           {(!isCollapsed || isMobile) && (
             <>
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-sm font-bold text-primary-foreground">LV</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+                <img src={logoImage} alt="Logo Votação via WhatsApp" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h2 className="font-semibold text-foreground">Votação Online</h2>
