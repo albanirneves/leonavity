@@ -10,10 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Settings, Search, Edit, Trash2, MessageSquare } from 'lucide-react';
+import { Plus, Settings, Search, Edit, Trash2, MessageSquare, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+
+interface ScheduleItem {
+  weekday: number;
+  hour: string;
+}
 
 interface Event {
   id: number;
@@ -26,6 +31,8 @@ interface Event {
   pix_tax: number;
   card_tax: number;
   created_at: string;
+  send_ranking?: ScheduleItem[] | null;
+  msg_saudacao?: string;
 }
 
 interface Account {
@@ -65,6 +72,11 @@ export default function Events() {
   const [isMessagesDialogOpen, setIsMessagesDialogOpen] = useState(false);
   const [messagesText, setMessagesText] = useState('');
   const [selectedEventForMessages, setSelectedEventForMessages] = useState<Event | null>(null);
+  
+  const [isParciaisDialogOpen, setIsParciaisDialogOpen] = useState(false);
+  const [selectedEventForParciais, setSelectedEventForParciais] = useState<Event | null>(null);
+  const [newScheduleWeekday, setNewScheduleWeekday] = useState(1);
+  const [newScheduleHour, setNewScheduleHour] = useState('09:00');
 
   const { toast } = useToast();
 
@@ -131,8 +143,9 @@ export default function Events() {
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao carregar eventos', variant: 'destructive' });
     } else {
-      setEvents(data || []);
-      setFilteredEvents(data || []);
+      const eventsData = data as unknown as Event[];
+      setEvents(eventsData);
+      setFilteredEvents(eventsData);
     }
   };
 
@@ -394,6 +407,73 @@ export default function Events() {
     setSelectedCategoryForEdit(category);
     setEditCategoryName(category.name);
     setIsEditCategoryDialogOpen(true);
+  };
+
+  const openParciaisModal = (event: Event, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedEventForParciais(event);
+    setIsParciaisDialogOpen(true);
+  };
+
+  const handleAddSchedule = async () => {
+    if (!selectedEventForParciais) return;
+
+    const currentSchedules = selectedEventForParciais.send_ranking || [];
+    const newSchedule: ScheduleItem = {
+      weekday: newScheduleWeekday,
+      hour: newScheduleHour
+    };
+
+    const updatedSchedules = [...currentSchedules, newSchedule];
+
+    const { error } = await supabase
+      .from('events')
+      .update({ send_ranking: updatedSchedules as any })
+      .eq('id', selectedEventForParciais.id);
+
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao adicionar horário', variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: 'Horário adicionado com sucesso' });
+      // Update local state
+      setSelectedEventForParciais({
+        ...selectedEventForParciais,
+        send_ranking: updatedSchedules
+      });
+      fetchEvents();
+      // Reset form
+      setNewScheduleWeekday(1);
+      setNewScheduleHour('09:00');
+    }
+  };
+
+  const handleRemoveSchedule = async (index: number) => {
+    if (!selectedEventForParciais) return;
+
+    const currentSchedules = selectedEventForParciais.send_ranking || [];
+    const updatedSchedules = currentSchedules.filter((_, i) => i !== index);
+
+    const { error } = await supabase
+      .from('events')
+      .update({ send_ranking: updatedSchedules as any })
+      .eq('id', selectedEventForParciais.id);
+
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao remover horário', variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: 'Horário removido com sucesso' });
+      // Update local state
+      setSelectedEventForParciais({
+        ...selectedEventForParciais,
+        send_ranking: updatedSchedules
+      });
+      fetchEvents();
+    }
+  };
+
+  const getWeekdayName = (weekday: number) => {
+    const days = ['', 'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    return days[weekday] || '';
   };
 
   if (loading) {
@@ -758,6 +838,14 @@ export default function Events() {
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Mensagens
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => openParciaisModal(event, e)}
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Parciais
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -885,6 +973,74 @@ export default function Events() {
             <Button onClick={handleSaveMessages}>
               Salvar
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Parciais Modal */}
+      <Dialog open={isParciaisDialogOpen} onOpenChange={setIsParciaisDialogOpen}>
+        <DialogContent className="mx-4 my-4 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Parciais - {selectedEventForParciais?.name}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Add new schedule form */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Label htmlFor="weekday">Dia da Semana</Label>
+                <Select value={newScheduleWeekday.toString()} onValueChange={(value) => setNewScheduleWeekday(parseInt(value))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar dia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Domingo</SelectItem>
+                    <SelectItem value="2">Segunda-feira</SelectItem>
+                    <SelectItem value="3">Terça-feira</SelectItem>
+                    <SelectItem value="4">Quarta-feira</SelectItem>
+                    <SelectItem value="5">Quinta-feira</SelectItem>
+                    <SelectItem value="6">Sexta-feira</SelectItem>
+                    <SelectItem value="7">Sábado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Label htmlFor="hour">Horário</Label>
+                <Input
+                  id="hour"
+                  type="time"
+                  value={newScheduleHour}
+                  onChange={(e) => setNewScheduleHour(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleAddSchedule}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Schedule list */}
+            <div className="space-y-2">
+              {selectedEventForParciais?.send_ranking && selectedEventForParciais.send_ranking.length > 0 ? (
+                selectedEventForParciais.send_ranking.map((schedule, index) => (
+                  <div key={index} className="flex justify-between items-center p-3 border rounded">
+                    <span>
+                      {getWeekdayName(schedule.weekday)} - {schedule.hour}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveSchedule(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  Nenhum horário configurado
+                </p>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

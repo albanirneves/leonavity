@@ -128,6 +128,7 @@ export type Database = {
           msg_saudacao: string | null
           name: string
           pix_tax: number | null
+          send_ranking: Json | null
           start_vote: string
           vote_value: number
         }
@@ -141,6 +142,7 @@ export type Database = {
           msg_saudacao?: string | null
           name: string
           pix_tax?: number | null
+          send_ranking?: Json | null
           start_vote: string
           vote_value: number
         }
@@ -154,6 +156,7 @@ export type Database = {
           msg_saudacao?: string | null
           name?: string
           pix_tax?: number | null
+          send_ranking?: Json | null
           start_vote?: string
           vote_value?: number
         }
