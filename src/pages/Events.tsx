@@ -473,8 +473,8 @@ export default function Events() {
                   <Input
                     id="name"
                     value={eventForm.name}
-                    onChange={(e) => setEventForm({ ...eventForm, name: e.target.value.slice(0, 24) })}
-                    maxLength={24}
+                    onChange={(e) => setEventForm({ ...eventForm, name: e.target.value.slice(0, 50) })}
+                    maxLength={50}
                   />
                 </div>
                 
@@ -603,8 +603,8 @@ export default function Events() {
               <Input
                 id="edit_name"
                 value={editEventForm.name}
-                onChange={(e) => setEditEventForm({ ...editEventForm, name: e.target.value.slice(0, 24) })}
-                maxLength={24}
+                onChange={(e) => setEditEventForm({ ...editEventForm, name: e.target.value.slice(0, 50) })}
+                maxLength={50}
               />
             </div>
             
@@ -777,8 +777,8 @@ export default function Events() {
               <Input
                 placeholder="Nome da categoria"
                 value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value.slice(0, 24))}
-                maxLength={24}
+                onChange={(e) => setNewCategory(e.target.value.slice(0, 50))}
+                maxLength={50}
               />
               <Button onClick={handleAddCategory}>
                 <Plus className="h-4 w-4" />
@@ -825,8 +825,8 @@ export default function Events() {
               <Input
                 id="edit_category_name"
                 value={editCategoryName}
-                onChange={(e) => setEditCategoryName(e.target.value.slice(0, 24))}
-                maxLength={24}
+                onChange={(e) => setEditCategoryName(e.target.value.slice(0, 50))}
+                maxLength={50}
               />
             </div>
           </div>
