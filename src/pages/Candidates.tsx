@@ -429,10 +429,11 @@ export default function Candidates() {
         ? existingCandidates[0].id_candidate + 1 
         : 1;
 
-      // Create phone number if provided
+      // Create phone number if provided (numbers only, no + prefix)
       let fullPhone = null;
       if (newCandidateForm.phone_ddd && newCandidateForm.phone_number) {
-        fullPhone = `${newCandidateForm.phone_ddi}${newCandidateForm.phone_ddd}${newCandidateForm.phone_number}`;
+        const ddi = newCandidateForm.phone_ddi.replace('+', '');
+        fullPhone = `${ddi}${newCandidateForm.phone_ddd}${newCandidateForm.phone_number}`;
       }
 
       // First, create the candidate
@@ -533,10 +534,11 @@ export default function Candidates() {
       
       const bannerShouldRegenerate = nameChanged || idCandidateChanged || idCategoryChanged || photoChanged;
 
-      // Create phone number if provided
+      // Create phone number if provided (numbers only, no + prefix)
       let fullPhone = null;
       if (editCandidateForm.phone_ddd && editCandidateForm.phone_number) {
-        fullPhone = `${editCandidateForm.phone_ddi}${editCandidateForm.phone_ddd}${editCandidateForm.phone_number}`;
+        const ddi = editCandidateForm.phone_ddi.replace('+', '');
+        fullPhone = `${ddi}${editCandidateForm.phone_ddd}${editCandidateForm.phone_number}`;
       }
 
       const { error } = await supabase
