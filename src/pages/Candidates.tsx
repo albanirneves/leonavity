@@ -269,8 +269,8 @@ export default function Candidates() {
       );
     }
     
-    // Sort by votes count (descending - most voted first)
-    filtered = filtered.sort((a, b) => b.votes_count - a.votes_count);
+    // Sort by candidate ID (ascending)
+    filtered = filtered.sort((a, b) => a.id_candidate - b.id_candidate);
     
     setFilteredCandidates(filtered);
   };
