@@ -96,19 +96,39 @@ function bufferToUint8Array(ab: ArrayBuffer) {
   return new Uint8Array(ab);
 }
 
-// Draw a rounded rectangle (solid)
 function drawRoundedRect(
   canvas: Image,
   x: number,
   y: number,
   w: number,
   h: number,
-  radius: number,
+  r: number,
   colorHex: string,
 ) {
-  const c = hexToRgba(colorHex);
+  // clamp radius
+  r = Math.max(0, Math.min(r, Math.floor(Math.min(w, h) / 2)));
+  const { r: cr, g: cg, b: cb, a: ca } = hexToRgba(colorHex);
+  const color = Image.rgbaToColor(cr, cg, cb, ca);
   const tmp = new Image(w, h).fill(0x00000000);
-  tmp.roundedRectangle(0, 0, w, h, radius, Image.rgbaToColor(c.r, c.g, c.b, c.a));
+
+  for (let yy = 0; yy < h; yy++) {
+    for (let xx = 0; xx < w; xx++) {
+      const inCoreX = (xx >= r) && (xx < w - r);
+      const inCoreY = (yy >= r) && (yy < h - r);
+      if (inCoreX || inCoreY) {
+        tmp.setPixelAt(xx, yy, color);
+        continue;
+      }
+      // corner centers
+      const cx = (xx < r) ? r : (w - 1 - r);
+      const cy = (yy < r) ? r : (h - 1 - r);
+      const dx = xx - cx;
+      const dy = yy - cy;
+      if ((dx * dx + dy * dy) <= (r * r)) {
+        tmp.setPixelAt(xx, yy, color);
+      }
+    }
+  }
   canvas.composite(tmp, x, y);
 }
 
