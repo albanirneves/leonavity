@@ -57,16 +57,14 @@ function cover(img: Image, targetW: number, targetH: number): Image {
   return resized.crop(x, y, targetW, targetH);
 }
 
-// recolor all non-transparent pixels of a PNG to a given hex color
-function recolorSolid(img: Image, hex: string): Image {
+// Safer: lê alpha do src e escreve numa nova imagem colorida
+function tintByAlpha(src: Image, hex: string): Image {
   const rgba = hexToRgba(hex);
-  const out = img.clone();
-  for (let y = 0; y < out.height; y++) {
-    for (let x = 0; x < out.width; x++) {
-      const { r, g, b, a } = out.getRGBAAt(x, y);
-      if (a > 0) {
-        out.setPixelAt(x, y, Image.rgbaToColor(rgba.r, rgba.g, rgba.b, a));
-      }
+  const out = new Image(src.width, src.height).fill(0x00000000);
+  for (let y = 0; y < src.height; y++) {
+    for (let x = 0; x < src.width; x++) {
+      const { a } = src.getRGBAAt(x, y);
+      if (a > 0) out.setPixelAt(x, y, Image.rgbaToColor(rgba.r, rgba.g, rgba.b, a));
     }
   }
   return out;
@@ -224,7 +222,7 @@ serve(async (req) => {
     const cands = await resolveCandidateNames(supabase, candObjs);
 
     // Load base images
-    const [bgImgRaw, framesRaw] = await Promise.all([
+    const [bgImgRaw, framesRaw0] = await Promise.all([
       loadImage(backgroundUrl),
       loadImage(framesUrl),
     ]);
@@ -246,8 +244,17 @@ serve(async (req) => {
       canvas.composite(cropped, slot.x, slot.y);
     }
 
-    // Recolor frames overlay and composite
-    const framesTinted = recolorSolid(framesRaw, frameColor);
+    // Validação/resize do frame (evita width/height = 0 e desalinhamento)
+    if (framesRaw0.width <= 0 || framesRaw0.height <= 0) {
+      throw new Error("framesUrl decoded to empty image (width/height = 0).");
+    }
+    const framesRaw =
+      framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H
+        ? framesRaw0.resize(CANVAS_W, CANVAS_H)
+        : framesRaw0;
+
+    // Recolor seguro por alpha
+    const framesTinted = tintByAlpha(framesRaw, frameColor);
     canvas.composite(framesTinted, 0, 0);
 
     // Name bars + texts
