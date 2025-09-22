@@ -12,8 +12,8 @@ const DEFAULT_BUCKET = "candidates";
 const CANVAS_W = 768;
 const CANVAS_H = 1365;
 
-const PHOTO_W = 370;
-const PHOTO_H = 470;
+const PHOTO_W = 523;
+const PHOTO_H = 700;
 const NAME_BAR_H = 58;
 const NAME_FONT_START = 36;
 
