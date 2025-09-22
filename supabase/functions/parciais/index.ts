@@ -1,4 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import {
+  Image,
+  Font,
+} from "https://deno.land/x/imagescript@1.4.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.2";
 
 // ---------- ENV ----------
@@ -15,6 +19,7 @@ const CANVAS_H = 1365;
 const PHOTO_W = 370;
 const PHOTO_H = 470;
 const NAME_BAR_H = 58;
+const NAME_FONT_START = 36;
 
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
@@ -26,11 +31,9 @@ const SLOTS = [
   { x: 460, y: 1040 },
 ] as const;
 
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Fonts (Montserrat Bold – you can switch URLs if you host locally)
+const MONTSERRAT_BOLD =
+  "https://fonts.gstatic.com/s/montserrat/v25/JTUHjIg1_i6t8kCHKm459WxZqh7p29Y.woff2";
 
 // ---------- Helpers ----------
 async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
@@ -41,11 +44,90 @@ async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
   return await r.arrayBuffer();
 }
 
-// Function to convert image to base64
-async function imageToBase64(url: string): Promise<string> {
-  const buffer = await fetchArrayBuffer(url);
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-  return `data:image/jpeg;base64,${base64}`;
+async function loadImage(url: string): Promise<Image> {
+  const buf = await fetchArrayBuffer(url);
+  return await Image.decode(new Uint8Array(buf));
+}
+
+// Cover-fit an image into the target w×h without distortion.
+function cover(img: Image, targetW: number, targetH: number): Image {
+  const scale = Math.max(targetW / img.width, targetH / img.height);
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  const resized = img.resize(w, h);
+  const x = Math.floor((w - targetW) / 2);
+  const y = Math.floor((h - targetH) / 2);
+  return resized.crop(x, y, targetW, targetH);
+}
+
+// recolor all non-transparent pixels of a PNG to a given hex color
+function recolorSolid(img: Image, hex: string): Image {
+  const rgba = hexToRgba(hex);
+  const out = img.clone();
+  for (let y = 0; y < out.height; y++) {
+    for (let x = 0; x < out.width; x++) {
+      const { r, g, b, a } = out.getRGBAAt(x, y);
+      if (a > 0) {
+        out.setPixelAt(x, y, Image.rgbaToColor(rgba.r, rgba.g, rgba.b, a));
+      }
+    }
+  }
+  return out;
+}
+
+function hexToRgba(hex: string) {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3
+    ? h.split("").map(ch => ch + ch).join("")
+    : h, 16);
+  return {
+    r: (n >> 16) & 255,
+    g: (n >> 8) & 255,
+    b: n & 255,
+    a: 255,
+  };
+}
+
+async function loadFontWoff2(url: string, size: number): Promise<Font> {
+  const buf = await fetchArrayBuffer(url);
+  return await Font.from(bufferToUint8Array(buf), { size });
+}
+
+function bufferToUint8Array(ab: ArrayBuffer) {
+  return new Uint8Array(ab);
+}
+
+// Draw a rounded rectangle (solid)
+function drawRoundedRect(
+  canvas: Image,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius: number,
+  colorHex: string,
+) {
+  const c = hexToRgba(colorHex);
+  const tmp = new Image(w, h).fill(0x00000000);
+  tmp.roundedRectangle(0, 0, w, h, radius, Image.rgbaToColor(c.r, c.g, c.b, c.a));
+  canvas.composite(tmp, x, y);
+}
+
+// Fit name text in width, reducing font size if necessary (down to minSize)
+async function fitText(
+  text: string,
+  maxWidth: number,
+  startSize = NAME_FONT_START,
+  minSize = 22,
+): Promise<{ font: Font; size: number }> {
+  let size = startSize;
+  for (; size >= minSize; size -= 2) {
+    const f = await loadFontWoff2(MONTSERRAT_BOLD, size);
+    const metrics = f.measureText(text);
+    if (metrics.width <= maxWidth) return { font: f, size };
+  }
+  // fallback: smallest font
+  return { font: await loadFontWoff2(MONTSERRAT_BOLD, minSize), size: minSize };
 }
 
 // Query candidate names if only IDs are provided
@@ -88,162 +170,11 @@ async function resolveCandidateNames(
   return final;
 }
 
-// Create HTML canvas-based collage
-async function createCollageHTML(
-  backgroundUrl: string,
-  framesUrl: string,
-  frameColor: string,
-  candidates: Array<{ name: string; photoUrl: string }>
-): Promise<string> {
-  const candidateImages = await Promise.all(
-    candidates.map(async (c) => ({
-      name: c.name,
-      dataUrl: await imageToBase64(c.photoUrl)
-    }))
-  );
-
-  const backgroundDataUrl = await imageToBase64(backgroundUrl);
-  const framesDataUrl = await imageToBase64(framesUrl);
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { margin: 0; padding: 0; }
-        #canvas { border: none; }
-      </style>
-    </head>
-    <body>
-      <canvas id="canvas" width="${CANVAS_W}" height="${CANVAS_H}"></canvas>
-      <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        const slots = ${JSON.stringify(SLOTS)};
-        const candidates = ${JSON.stringify(candidateImages)};
-        
-        async function createCollage() {
-          // Load background
-          const bg = new Image();
-          bg.crossOrigin = 'anonymous';
-          await new Promise(resolve => {
-            bg.onload = resolve;
-            bg.src = '${backgroundDataUrl}';
-          });
-          
-          // Draw background (cover fit)
-          const bgScale = Math.max(${CANVAS_W} / bg.width, ${CANVAS_H} / bg.height);
-          const bgW = bg.width * bgScale;
-          const bgH = bg.height * bgScale;
-          const bgX = (${CANVAS_W} - bgW) / 2;
-          const bgY = (${CANVAS_H} - bgH) / 2;
-          ctx.drawImage(bg, bgX, bgY, bgW, bgH);
-          
-          // Draw candidate photos
-          for (let i = 0; i < candidates.length && i < slots.length; i++) {
-            const candidate = candidates[i];
-            const slot = slots[i];
-            
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            await new Promise(resolve => {
-              img.onload = resolve;
-              img.src = candidate.dataUrl;
-            });
-            
-            // Cover fit photo
-            const scale = Math.max(${PHOTO_W} / img.width, ${PHOTO_H} / img.height);
-            const w = img.width * scale;
-            const h = img.height * scale;
-            const x = slot.x + (${PHOTO_W} - w) / 2;
-            const y = slot.y + (${PHOTO_H} - h) / 2;
-            
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(slot.x, slot.y, ${PHOTO_W}, ${PHOTO_H});
-            ctx.clip();
-            ctx.drawImage(img, x, y, w, h);
-            ctx.restore();
-          }
-          
-          // Load and draw frames
-          const frames = new Image();
-          frames.crossOrigin = 'anonymous';
-          await new Promise(resolve => {
-            frames.onload = resolve;
-            frames.src = '${framesDataUrl}';
-          });
-          ctx.drawImage(frames, 0, 0, ${CANVAS_W}, ${CANVAS_H});
-          
-          // Draw name bars and text
-          for (let i = 0; i < candidates.length && i < slots.length; i++) {
-            const candidate = candidates[i];
-            const slot = slots[i];
-            
-            const barX = slot.x;
-            const barY = slot.y + ${PHOTO_H} - Math.floor(${NAME_BAR_H} * 0.9);
-            const barW = ${PHOTO_W};
-            const barH = ${NAME_BAR_H};
-            
-            // Draw rounded rectangle
-            ctx.fillStyle = '${frameColor}';
-            ctx.beginPath();
-            ctx.roundRect(barX, barY, barW, barH, 10);
-            ctx.fill();
-            
-            // Draw text
-            ctx.fillStyle = '#0d0d0d';
-            ctx.font = 'bold 28px Montserrat, Arial, sans-serif';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            
-            const textX = barX + 18;
-            const textY = barY + barH / 2;
-            
-            // Fit text
-            let fontSize = 28;
-            let text = candidate.name;
-            ctx.font = \`bold \${fontSize}px Montserrat, Arial, sans-serif\`;
-            
-            while (ctx.measureText(text).width > barW - 36 && fontSize > 16) {
-              fontSize -= 2;
-              ctx.font = \`bold \${fontSize}px Montserrat, Arial, sans-serif\`;
-            }
-            
-            ctx.fillText(text, textX, textY);
-          }
-          
-          // Convert to blob and return
-          return new Promise(resolve => {
-            canvas.toBlob(resolve, 'image/png');
-          });
-        }
-        
-        createCollage().then(blob => {
-          window.collageBlob = blob;
-        });
-      </script>
-    </body>
-    </html>
-  `;
-
-  return html;
-}
-
 // ---------- HTTP ----------
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   try {
     if (req.method !== "POST") {
-      return new Response("Use POST", { 
-        status: 405,
-        headers: corsHeaders
-      });
+      return new Response("Use POST", { status: 405 });
     }
 
     const {
@@ -261,28 +192,19 @@ serve(async (req) => {
     if (!backgroundUrl || !framesUrl) {
       return Response.json(
         { error: "Missing backgroundUrl or framesUrl" },
-        { 
-          status: 400,
-          headers: corsHeaders
-        },
+        { status: 400 },
       );
     }
     if (!Array.isArray(candidates) || candidates.length < 1 || candidates.length > 6) {
       return Response.json(
         { error: "Provide 1 to 6 candidate ids in 'candidates'." },
-        { 
-          status: 400,
-          headers: corsHeaders
-        },
+        { status: 400 },
       );
     }
     if (!id_event || !id_category) {
       return Response.json(
         { error: "Missing id_event or id_category" },
-        { 
-          status: 400,
-          headers: corsHeaders
-        },
+        { status: 400 },
       );
     }
 
@@ -302,34 +224,82 @@ serve(async (req) => {
     });
     const cands = await resolveCandidateNames(supabase, candObjs);
 
-    // For now, return a simplified response indicating the function works
-    // In a full implementation, you'd use a headless browser or similar to render the HTML canvas
+    // Load base images
+    const [bgImgRaw, framesRaw] = await Promise.all([
+      loadImage(backgroundUrl),
+      loadImage(framesUrl),
+    ]);
+
+    // Prepare canvas
+    const canvas = new Image(CANVAS_W, CANVAS_H);
+    canvas.fill(0x00000000);
+
+    // Background (cover)
+    const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
+    canvas.composite(bg, 0, 0);
+
+    // Paste photos
+    for (let i = 0; i < cands.length; i++) {
+      const slot = SLOTS[i];
+      const { photoUrl } = cands[i];
+      const photo = await loadImage(photoUrl);
+      const cropped = cover(photo, PHOTO_W, PHOTO_H);
+      canvas.composite(cropped, slot.x, slot.y);
+    }
+
+    // Recolor frames overlay and composite
+    const framesTinted = recolorSolid(framesRaw, frameColor);
+    canvas.composite(framesTinted, 0, 0);
+
+    // Name bars + texts
+    for (let i = 0; i < cands.length; i++) {
+      const slot = SLOTS[i];
+      const name = cands[i].name ?? "";
+
+      // Bar spans photo width (plus slight inset if your overlay asks for it)
+      const barX = slot.x + 0;
+      const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9);
+      const barW = PHOTO_W;
+      const barH = NAME_BAR_H;
+
+      drawRoundedRect(canvas, barX, barY, barW, barH, 10, frameColor);
+
+      // Fit text
+      const padding = 18;
+      const { font } = await fitText(name, barW - padding * 2, NAME_FONT_START, 20);
+
+      const metrics = font.measureText(name);
+      const textX = barX + padding;
+      const textY = barY + Math.floor((barH + metrics.height) / 2) - 6; // visually centered
+
+      // Text color: near-black for high contrast
+      await canvas.print(font, name, textX, textY, 0x0d0d0dff);
+    }
+
+    // Encode PNG
+    const png = await canvas.encode();
+
+    // Upload to Storage
+    const { error: upErr } = await supabase.storage.from(bucket).upload(
+      outputPath,
+      new Blob([png], { type: "image/png" }),
+      { upsert: true, contentType: "image/png" },
+    );
+    if (upErr) throw upErr;
+
+    // Get public URL
+    const { data: pub } = supabase.storage.from(bucket).getPublicUrl(outputPath);
+
     return Response.json({
       ok: true,
-      message: "Collage function is working. Canvas-based implementation requires additional setup.",
       width: CANVAS_W,
       height: CANVAS_H,
       bucket,
       path: outputPath,
-      candidates: cands,
-      debug: {
-        backgroundUrl,
-        framesUrl,
-        frameColor,
-        candidatesCount: cands.length
-      }
-    }, {
-      headers: corsHeaders
+      publicUrl: pub.publicUrl,
     });
-
   } catch (err) {
-    console.error("Error in parciais function:", err);
-    return Response.json(
-      { error: String(err?.message ?? err) }, 
-      { 
-        status: 500,
-        headers: corsHeaders
-      }
-    );
+    console.error(err);
+    return Response.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
 });
