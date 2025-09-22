@@ -19,12 +19,12 @@ const NAME_FONT_START = 36;
 
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
-  { x: 90,  y: 260 },
-  { x: 460, y: 260 },
-  { x: 90,  y: 650 },
-  { x: 460, y: 650 },
-  { x: 90,  y: 1040 },
-  { x: 460, y: 1040 },
+  { x: 132,  y: 176 },
+  { x: 450, y: 176 },
+  { x: 132,  y: 589 },
+  { x: 450, y: 589 },
+  { x: 132,  y: 1002 },
+  { x: 450, y: 1002 },
 ] as const;
 
 // Local TTF in Supabase Storage (public)
@@ -223,8 +223,11 @@ serve(async (req) => {
       const slot = SLOTS[i];
       const { photoUrl } = cands[i];
       const photo = await loadImage(photoUrl);
-      const cropped = cover(photo, PHOTO_W, PHOTO_H);
-      canvas.composite(cropped, slot.x, slot.y);
+      //const cropped = cover(photo, PHOTO_W, PHOTO_H);
+      const framesRaw = (photo.width !== PHOTO_W || photo.height !== PHOTO_H)
+        ? photo.resize(PHOTO_W, PHOTO_H)
+        : photo;
+      canvas.composite(framesRaw, slot.x, slot.y);
     }
 
     // normaliza dimensões do frame para o tamanho do canvas
