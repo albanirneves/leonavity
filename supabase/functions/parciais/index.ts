@@ -57,53 +57,6 @@ function cover(img: Image, targetW: number, targetH: number): Image {
   return resized.crop(x, y, targetW, targetH);
 }
 
-// Create a rounded-rectangle alpha mask (white = opaque, transparent elsewhere)
-function makeRoundedMask(w: number, h: number, r: number): Image {
-  r = Math.max(0, Math.min(r, Math.floor(Math.min(w, h) / 2)));
-  const mask = new Image(w, h).fill(0x00000000);
-  const white = Image.rgbaToColor(255, 255, 255, 255);
-
-  for (let yy = 0; yy < h; yy++) {
-    for (let xx = 0; xx < w; xx++) {
-      const inCoreX = (xx >= r) && (xx < w - r);
-      const inCoreY = (yy >= r) && (yy < h - r);
-      if (inCoreX || inCoreY) {
-        mask.setPixelAt(xx, yy, white);
-        continue;
-      }
-      const cx = (xx < r) ? r : (w - 1 - r);
-      const cy = (yy < r) ? r : (h - 1 - r);
-      const dx = xx - cx;
-      const dy = yy - cy;
-      if ((dx * dx + dy * dy) <= (r * r)) {
-        mask.setPixelAt(xx, yy, white);
-      }
-    }
-  }
-  return mask;
-}
-
-// Apply rounded mask to an image (keeps antialias by multiplying alpha)
-function applyRoundedMask(src: Image, radius: number): Image {
-  const w = src.width, h = src.height;
-  const mask = makeRoundedMask(w, h, radius);
-  const out = new Image(w, h).fill(0x00000000);
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const s = src.getRGBAAt(x, y);
-      const m = mask.getRGBAAt(x, y);
-      if (m.a === 0) continue; // fully transparent outside rounded area
-      // multiply source alpha by mask alpha (antialias on edges)
-      const a = Math.round((s.a * m.a) / 255);
-      if (a > 0) {
-        out.setPixelAt(x, y, Image.rgbaToColor(s.r, s.g, s.b, a));
-      }
-    }
-  }
-  return out;
-}
-
 // Gera uma camada sólida na cor desejada copiando o alpha do frame (loop seguro)
 /*function colorizeFromAlpha(mask: Image, hex: string): Image {
   const { r, g, b, a } = hexToRgba(hex);
@@ -265,20 +218,16 @@ serve(async (req) => {
     const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
     canvas.composite(bg, 0, 0);
 
-    // Paste photos with rounded corners (~5%)
+    // Paste photos
     for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
       const { photoUrl } = cands[i];
       const photo = await loadImage(photoUrl);
-      // 1) resize to target (or use `cover(photo, PHOTO_W, PHOTO_H)` se preferir "preencher" sem distorcer)
-      const resized = (photo.width !== PHOTO_W || photo.height !== PHOTO_H)
+      //const cropped = cover(photo, PHOTO_W, PHOTO_H);
+      const photoRaw = (photo.width !== PHOTO_W || photo.height !== PHOTO_H)
         ? photo.resize(PHOTO_W, PHOTO_H)
         : photo;
-      // 2) round corners at 5% of the smallest side
-      const radius = Math.round(Math.min(PHOTO_W, PHOTO_H) * 0.05);
-      const rounded = applyRoundedMask(resized, radius);
-      // 3) composite
-      canvas.composite(rounded, slot.x, slot.y);
+      canvas.composite(photoRaw, slot.x, slot.y);
     }
 
     // normaliza dimensões do frame para o tamanho do canvas
