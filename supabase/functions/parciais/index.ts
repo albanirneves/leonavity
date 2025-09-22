@@ -57,15 +57,18 @@ function cover(img: Image, targetW: number, targetH: number): Image {
   return resized.crop(x, y, targetW, targetH);
 }
 
-// Coloriza o frame usando máscara de alpha (sem loops por pixel)
-function colorizeWithMask(mask: Image, hex: string): Image {
+// Gera uma camada sólida na cor desejada copiando o alpha do frame (loop seguro)
+function colorizeFromAlpha(mask: Image, hex: string): Image {
   const { r, g, b, a } = hexToRgba(hex);
-  // camada sólida na cor escolhida
-  const colorLayer = new Image(mask.width, mask.height)
-    .fill(Image.rgbaToColor(r, g, b, a));
-  // aplica o alpha do PNG de molduras como máscara
-  colorLayer.applyMask(mask);
-  return colorLayer;
+  const out = new Image(mask.width, mask.height).fill(0x00000000);
+  const baseColor = Image.rgbaToColor(r, g, b, a);
+  for (let y = 0; y < mask.height; y++) {
+    for (let x = 0; x < mask.width; x++) {
+      const { a: ma } = mask.getRGBAAt(x, y);
+      if (ma > 0) out.setPixelAt(x, y, Image.rgbaToColor(r, g, b, ma));
+    }
+  }
+  return out;
 }
 
 function hexToRgba(hex: string) {
@@ -258,7 +261,7 @@ serve(async (req) => {
     framesSafe.composite(framesRaw, 0, 0);
 
     // Recolor seguro por alpha
-    const framesTinted = colorizeWithMask(framesSafe, frameColor);
+    const framesTinted = colorizeFromAlpha(framesSafe, frameColor);
     canvas.composite(framesTinted, 0, 0);
 
     // Name bars + texts
