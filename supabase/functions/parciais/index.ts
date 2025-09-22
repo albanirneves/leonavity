@@ -27,7 +27,7 @@ const SLOTS = [
   { x: 460, y: 1040 },
 ] as const;
 
-// Local TTF in your Supabase Storage (public)
+// Local TTF in Supabase Storage (public)
 const FONT_URL =
   "https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/assets/OpenSans-SemiBold.ttf";
 let FONT_CACHE: Uint8Array | null = null;
@@ -58,7 +58,7 @@ function cover(img: Image, targetW: number, targetH: number): Image {
 }
 
 // Gera uma camada sólida na cor desejada copiando o alpha do frame (loop seguro)
-function colorizeFromAlpha(mask: Image, hex: string): Image {
+/*function colorizeFromAlpha(mask: Image, hex: string): Image {
   const { r, g, b, a } = hexToRgba(hex);
   const out = new Image(mask.width, mask.height).fill(0x00000000);
   const baseColor = Image.rgbaToColor(r, g, b, a);
@@ -131,7 +131,7 @@ function drawRoundedRect(
   }
   canvas.composite(tmp, x, y);
 }
-
+  
 async function fitTextRender(
   text: string,
   maxWidth: number,
@@ -146,47 +146,7 @@ async function fitTextRender(
   }
   const img = await Image.renderText(fontBytes, minSize, text, color);
   return { img, size: minSize };
-}
-
-// Query candidate names if only IDs are provided
-async function resolveCandidateNames(
-  supabase: ReturnType<typeof createClient>,
-  candidates: Array<{ id_candidate: number; name?: string; photoUrl: string }>
-): Promise<Array<{ name: string; photoUrl: string }>> {
-  const final: Array<{ name: string; photoUrl: string }> = [];
-
-  const idsToFetch = candidates.map(c => c.id_candidate);
-  for (const c of candidates) {
-    // placeholder que mantém a ordem
-    final.push({ name: "__PENDING__", photoUrl: c.photoUrl });
-  }
-
-  if (idsToFetch.length > 0) {
-    const { data, error } = await supabase
-      .from("candidates")
-      .select("id_candidate,name")
-      .in("id_candidate", idsToFetch);
-
-    if (error) throw error;
-
-    const map = new Map<number, string>(
-      (data ?? []).map((r) => [r.id_candidate as number, (r.name ?? "").toString()])
-    );
-
-    // Replace placeholders in order
-    let idxFetch = 0;
-    for (let i = 0; i < candidates.length; i++) {
-      if (final[i].name === "__PENDING__") {
-        const id = candidates[i].id_candidate!;
-        const nm = map.get(id) ?? `#${id}`;
-        final[i].name = nm;
-        idxFetch++;
-      }
-    }
-  }
-
-  return final;
-}
+}*/
 
 // ---------- HTTP ----------
 serve(async (req) => {
@@ -214,11 +174,16 @@ serve(async (req) => {
       );
     }
     if (!Array.isArray(candidates) || candidates.length < 1 || candidates.length > 6) {
-      return Response.json(
-        { error: "Provide 1 to 6 candidate ids in 'candidates'." },
-        { status: 400 },
-      );
+      return Response.json({ error: "Provide 1 to 6 candidates in 'candidates'." }, { status: 400 });
     }
+
+    // Validate shape: each item must have id_candidate (number) and name (string)
+    for (const c of candidates) {
+      if (typeof c?.id_candidate !== "number" || typeof c?.name !== "string") {
+        return Response.json({ error: "Each candidate must include { id_candidate:number, name:string }" }, { status: 400 });
+      }
+    }
+
     if (!id_event || !id_category) {
       return Response.json(
         { error: "Missing id_event or id_category" },
@@ -233,14 +198,11 @@ serve(async (req) => {
         ? photosBaseUrl.trim().replace(/\/+$/, "")
         : framesUrl.substring(0, framesUrl.lastIndexOf("/")); // diretório do framesUrl
 
-    const candObjs = (candidates as number[]).map((id_number: number) => {
-      const filename = `event_${id_event}_category_${id_category}_candidate_${id_number}.jpg`;
-      return {
-        id_candidate: id_number,
-        photoUrl: `${baseForPhotos}/${filename}`,
-      };
+    const candObjs = (candidates as Array<{id_candidate:number; name:string}>).map((c) => {
+      const filename = `event_${id_event}_category_${id_category}_candidate_${c.id_candidate}.jpg`;
+      return { name: c.name, photoUrl: `${baseForPhotos}/${filename}` };
     });
-    const cands = await resolveCandidateNames(supabase, candObjs);
+    const cands = candObjs; // names provided by request body
 
     // Load base images
     const [bgImgRaw, framesRaw0] = await Promise.all([
