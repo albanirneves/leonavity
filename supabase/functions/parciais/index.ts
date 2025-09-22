@@ -227,24 +227,18 @@ serve(async (req) => {
       canvas.composite(cropped, slot.x, slot.y);
     }
 
-    // Validação/resize do frame (evita width/height = 0 e desalinhamento)
-    /*if (!Number.isFinite(framesRaw0.width) || !Number.isFinite(framesRaw0.height) ||
-        framesRaw0.width <= 0 || framesRaw0.height <= 0) {
-      throw new Error("framesUrl decoded to empty image (width/height = 0).");
-    }
-
     // normaliza dimensões do frame para o tamanho do canvas
     const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
       ? framesRaw0.resize(CANVAS_W, CANVAS_H)
       : framesRaw0;
 
     // re-rasteriza em um buffer "limpo" para evitar meta estranha de PNG
-    const framesSafe = new Image(framesRaw.width, framesRaw.height).fill(0x00000000);
-    framesSafe.composite(framesRaw, 0, 0);
+    //const framesSafe = new Image(framesRaw.width, framesRaw.height).fill(0x00000000);
+    //framesSafe.composite(framesRaw, 0, 0);
 
     // Recolor seguro por alpha
-    const framesTinted = colorizeFromAlpha(framesSafe, frameColor);*/
-    canvas.composite(framesRaw0, 0, 0);
+    //const framesTinted = colorizeFromAlpha(framesSafe, frameColor);*/
+    canvas.composite(framesRaw, 0, 0);
 
     // Name bars + texts
     /*for (let i = 0; i < cands.length; i++) {
