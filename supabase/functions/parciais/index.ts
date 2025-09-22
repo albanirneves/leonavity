@@ -15,7 +15,7 @@ const CANVAS_H = 1365;
 const PHOTO_W = 221;
 const PHOTO_H = 295;
 const NAME_BAR_H = 58;
-const NAME_FONT_START = 36;
+const NAME_FONT_START = 24;
 
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
@@ -246,11 +246,11 @@ serve(async (req) => {
     // Name bars + texts
     for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
-      const name = (parseInt(i) + 1) + " - " + cands[i].name;
+      const name = ((parseInt(i) + 1) + " - " + cands[i].name).toUpperCase();
 
       // Bar spans photo width (plus slight inset if your overlay asks for it)
       const barX = slot.x + 15;
-      const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 30;
+      const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 32;
       const barW = PHOTO_W;
       const barH = NAME_BAR_H;
 
@@ -285,12 +285,7 @@ serve(async (req) => {
     const { data: pub } = supabase.storage.from(bucket).getPublicUrl(outputPath);
 
     return Response.json({
-      ok: true,
-      width: CANVAS_W,
-      height: CANVAS_H,
-      bucket,
-      path: outputPath,
-      publicUrl: pub.publicUrl,
+      publicUrl: pub.publicUrl
     });
   } catch (err) {
     console.error(err);
