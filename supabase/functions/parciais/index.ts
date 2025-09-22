@@ -12,8 +12,8 @@ const DEFAULT_BUCKET = "candidates";
 const CANVAS_W = 768;
 const CANVAS_H = 1365;
 
-const PHOTO_W = 207;
-const PHOTO_H = 276;
+const PHOTO_W = 221;
+const PHOTO_H = 295;
 const NAME_BAR_H = 58;
 const NAME_FONT_START = 36;
 
@@ -21,10 +21,10 @@ const NAME_FONT_START = 36;
 const SLOTS = [
   { x: 128,  y: 176 },
   { x: 448, y: 176 },
-  { x: 128,  y: 589 },
-  { x: 448, y: 589 },
-  { x: 128,  y: 998 },
-  { x: 448, y: 998 },
+  { x: 128,  y: 587 },
+  { x: 448, y: 587 },
+  { x: 128,  y: 995 },
+  { x: 448, y: 995 },
 ] as const;
 
 // Local TTF in Supabase Storage (public)
