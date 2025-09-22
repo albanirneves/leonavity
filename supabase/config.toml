@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.collage]
 verify_jwt = false
+
+[functions.parciais]
+verify_jwt = false
