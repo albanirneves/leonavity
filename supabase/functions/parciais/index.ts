@@ -82,7 +82,7 @@ function hexToRgba(hex: string) {
     b: n & 255,
     a: 255,
   };
-}
+}*/
 
 // Load the TTF from your Storage (cached)
 async function loadTTFBytes(): Promise<Uint8Array> {
@@ -92,7 +92,7 @@ async function loadTTFBytes(): Promise<Uint8Array> {
   return FONT_CACHE;
 }
 
-function bufferToUint8Array(ab: ArrayBuffer) {
+/*function bufferToUint8Array(ab: ArrayBuffer) {
   return new Uint8Array(ab);
 }
 
@@ -130,7 +130,7 @@ function drawRoundedRect(
     }
   }
   canvas.composite(tmp, x, y);
-}
+}*/
   
 async function fitTextRender(
   text: string,
@@ -146,7 +146,7 @@ async function fitTextRender(
   }
   const img = await Image.renderText(fontBytes, minSize, text, color);
   return { img, size: minSize };
-}*/
+}
 
 // ---------- HTTP ----------
 serve(async (req) => {
@@ -244,7 +244,7 @@ serve(async (req) => {
     canvas.composite(framesRaw, 0, 0);
 
     // Name bars + texts
-    /*for (let i = 0; i < cands.length; i++) {
+    for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
       const name = cands[i].name ?? "";
 
@@ -254,7 +254,7 @@ serve(async (req) => {
       const barW = PHOTO_W;
       const barH = NAME_BAR_H;
 
-      drawRoundedRect(canvas, barX, barY, barW, barH, 10, frameColor);
+      //drawRoundedRect(canvas, barX, barY, barW, barH, 10, frameColor);
 
       // Fit text
       const padding = 18;
@@ -268,7 +268,7 @@ serve(async (req) => {
       const textX = barX + padding;
       const textY = barY + Math.floor((barH - nameImg.height) / 2);
       canvas.composite(nameImg, textX, textY);
-    }*/
+    }
 
     // Encode PNG
     const png = await canvas.encode();
