@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import {
   Image,
   Font,
-} from "https://deno.land/x/imagescript@1.2.16/mod.ts";
+} from "https://deno.land/x/imagescript@1.4.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.2";
 
 // ---------- ENV ----------
