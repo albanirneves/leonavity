@@ -246,11 +246,11 @@ serve(async (req) => {
     // Name bars + texts
     for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
-      const name = cands[i].name ?? "";
+      const name = (parseInt(i) + 1) + " - " + cands[i].name;
 
       // Bar spans photo width (plus slight inset if your overlay asks for it)
-      const barX = slot.x + 0;
-      const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9);
+      const barX = slot.x + 15;
+      const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 30;
       const barW = PHOTO_W;
       const barH = NAME_BAR_H;
 
