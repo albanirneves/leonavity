@@ -285,7 +285,7 @@ serve(async (req) => {
     canvas.composite(framesRaw0, 0, 0);
 
     // Name bars + texts
-    for (let i = 0; i < cands.length; i++) {
+    /*for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
       const name = cands[i].name ?? "";
 
@@ -309,7 +309,7 @@ serve(async (req) => {
       const textX = barX + padding;
       const textY = barY + Math.floor((barH - nameImg.height) / 2);
       canvas.composite(nameImg, textX, textY);
-    }
+    }*/
 
     // Encode PNG
     const png = await canvas.encode();
