@@ -57,17 +57,15 @@ function cover(img: Image, targetW: number, targetH: number): Image {
   return resized.crop(x, y, targetW, targetH);
 }
 
-// Safer: lê alpha do src e escreve numa nova imagem colorida
-function tintByAlpha(src: Image, hex: string): Image {
-  const rgba = hexToRgba(hex);
-  const out = new Image(src.width, src.height).fill(0x00000000);
-  for (let y = 0; y < src.height; y++) {
-    for (let x = 0; x < src.width; x++) {
-      const { a } = src.getRGBAAt(x, y);
-      if (a > 0) out.setPixelAt(x, y, Image.rgbaToColor(rgba.r, rgba.g, rgba.b, a));
-    }
-  }
-  return out;
+// Coloriza o frame usando máscara de alpha (sem loops por pixel)
+function colorizeWithMask(mask: Image, hex: string): Image {
+  const { r, g, b, a } = hexToRgba(hex);
+  // camada sólida na cor escolhida
+  const colorLayer = new Image(mask.width, mask.height)
+    .fill(Image.rgbaToColor(r, g, b, a));
+  // aplica o alpha do PNG de molduras como máscara
+  colorLayer.applyMask(mask);
+  return colorLayer;
 }
 
 function hexToRgba(hex: string) {
@@ -245,16 +243,22 @@ serve(async (req) => {
     }
 
     // Validação/resize do frame (evita width/height = 0 e desalinhamento)
-    if (framesRaw0.width <= 0 || framesRaw0.height <= 0) {
+    if (!Number.isFinite(framesRaw0.width) || !Number.isFinite(framesRaw0.height) ||
+        framesRaw0.width <= 0 || framesRaw0.height <= 0) {
       throw new Error("framesUrl decoded to empty image (width/height = 0).");
     }
-    const framesRaw =
-      framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H
-        ? framesRaw0.resize(CANVAS_W, CANVAS_H)
-        : framesRaw0;
+
+    // normaliza dimensões do frame para o tamanho do canvas
+    const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
+      ? framesRaw0.resize(CANVAS_W, CANVAS_H)
+      : framesRaw0;
+
+    // re-rasteriza em um buffer "limpo" para evitar meta estranha de PNG
+    const framesSafe = new Image(framesRaw.width, framesRaw.height).fill(0x00000000);
+    framesSafe.composite(framesRaw, 0, 0);
 
     // Recolor seguro por alpha
-    const framesTinted = tintByAlpha(framesRaw, frameColor);
+    const framesTinted = colorizeWithMask(framesSafe, frameColor);
     canvas.composite(framesTinted, 0, 0);
 
     // Name bars + texts
