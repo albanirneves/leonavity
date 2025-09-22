@@ -246,7 +246,7 @@ serve(async (req) => {
     }
 
     // Validação/resize do frame (evita width/height = 0 e desalinhamento)
-    if (!Number.isFinite(framesRaw0.width) || !Number.isFinite(framesRaw0.height) ||
+    /*if (!Number.isFinite(framesRaw0.width) || !Number.isFinite(framesRaw0.height) ||
         framesRaw0.width <= 0 || framesRaw0.height <= 0) {
       throw new Error("framesUrl decoded to empty image (width/height = 0).");
     }
@@ -261,8 +261,8 @@ serve(async (req) => {
     framesSafe.composite(framesRaw, 0, 0);
 
     // Recolor seguro por alpha
-    const framesTinted = colorizeFromAlpha(framesSafe, frameColor);
-    canvas.composite(framesTinted, 0, 0);
+    const framesTinted = colorizeFromAlpha(framesSafe, frameColor);*/
+    canvas.composite(framesRaw0, 0, 0);
 
     // Name bars + texts
     for (let i = 0; i < cands.length; i++) {
