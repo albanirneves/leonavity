@@ -2,11 +2,10 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import {
   Image,
   Font,
-} from "https://deno.land/x/imagescript@1.4.0/mod.ts";
+} from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.2";
 
 // ---------- ENV ----------
-// Updated to trigger deployment
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_KEY =
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
