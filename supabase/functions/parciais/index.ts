@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import {
-  Image,
-  Font,
-} from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.2";
 
 // ---------- ENV ----------
@@ -30,9 +27,10 @@ const SLOTS = [
   { x: 460, y: 1040 },
 ] as const;
 
-// Fonts (Montserrat Bold – you can switch URLs if you host locally)
-const MONTSERRAT_BOLD =
-  "https://fonts.gstatic.com/s/montserrat/v25/JTUHjIg1_i6t8kCHKm459WxZqh7p29Y.woff2";
+// Local TTF in your Supabase Storage (public)
+const FONT_URL =
+  "https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/assets/OpenSans-SemiBold.ttf";
+let FONT_CACHE: Uint8Array | null = null;
 
 // ---------- Helpers ----------
 async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
@@ -87,9 +85,12 @@ function hexToRgba(hex: string) {
   };
 }
 
-async function loadFontWoff2(url: string, size: number): Promise<Font> {
-  const buf = await fetchArrayBuffer(url);
-  return await Font.from(bufferToUint8Array(buf), { size });
+// Load the TTF from your Storage (cached)
+async function loadTTFBytes(): Promise<Uint8Array> {
+  if (FONT_CACHE) return FONT_CACHE;
+  const ab = await fetchArrayBuffer(FONT_URL);
+  FONT_CACHE = new Uint8Array(ab);
+  return FONT_CACHE;
 }
 
 function bufferToUint8Array(ab: ArrayBuffer) {
@@ -112,21 +113,20 @@ function drawRoundedRect(
   canvas.composite(tmp, x, y);
 }
 
-// Fit name text in width, reducing font size if necessary (down to minSize)
-async function fitText(
+async function fitTextRender(
   text: string,
   maxWidth: number,
   startSize = NAME_FONT_START,
-  minSize = 22,
-): Promise<{ font: Font; size: number }> {
-  let size = startSize;
-  for (; size >= minSize; size -= 2) {
-    const f = await loadFontWoff2(MONTSERRAT_BOLD, size);
-    const metrics = f.measureText(text);
-    if (metrics.width <= maxWidth) return { font: f, size };
+  minSize = 20,
+  color = 0x0d0d0dff,
+): Promise<{ img: Image; size: number }> {
+  const fontBytes = await loadTTFBytes();
+  for (let s = startSize; s >= minSize; s -= 2) {
+    const img = await Image.renderText(fontBytes, s, text, color);
+    if (img.width <= maxWidth) return { img, size: s };
   }
-  // fallback: smallest font
-  return { font: await loadFontWoff2(MONTSERRAT_BOLD, minSize), size: minSize };
+  const img = await Image.renderText(fontBytes, minSize, text, color);
+  return { img, size: minSize };
 }
 
 // Query candidate names if only IDs are provided
@@ -265,14 +265,16 @@ serve(async (req) => {
 
       // Fit text
       const padding = 18;
-      const { font } = await fitText(name, barW - padding * 2, NAME_FONT_START, 20);
-
-      const metrics = font.measureText(name);
+      const { img: nameImg } = await fitTextRender(
+        name,
+        barW - padding * 2,
+        NAME_FONT_START,
+        20,
+        0x0d0d0dff
+      );
       const textX = barX + padding;
-      const textY = barY + Math.floor((barH + metrics.height) / 2) - 6; // visually centered
-
-      // Text color: near-black for high contrast
-      await canvas.print(font, name, textX, textY, 0x0d0d0dff);
+      const textY = barY + Math.floor((barH - nameImg.height) / 2);
+      canvas.composite(nameImg, textX, textY);
     }
 
     // Encode PNG
