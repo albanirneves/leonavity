@@ -20,11 +20,11 @@ const NAME_FONT_START = 24;
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
   { x: 128,  y: 176 },
-  { x: 448, y: 176 },
+  { x: 446, y: 176 },
   { x: 128,  y: 587 },
-  { x: 448, y: 587 },
+  { x: 446, y: 587 },
   { x: 128,  y: 995 },
-  { x: 448, y: 995 },
+  { x: 446, y: 995 },
 ] as const;
 
 // Local TTF in Supabase Storage (public)
@@ -250,7 +250,7 @@ serve(async (req) => {
 
       // Bar spans photo width (plus slight inset if your overlay asks for it)
       const barX = slot.x + 15;
-      const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 32;
+      const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 30;
       const barW = PHOTO_W;
       const barH = NAME_BAR_H;
 
