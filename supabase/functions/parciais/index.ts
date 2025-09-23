@@ -27,6 +27,38 @@ const SLOTS = [
   { x: 444, y: 995 },
 ] as const;
 
+// ---------- COLOR HELPERS ----------
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!m) throw new Error(`Invalid hex color: ${hex}`);
+  return {
+    r: parseInt(m[1], 16),
+    g: parseInt(m[2], 16),
+    b: parseInt(m[3], 16),
+  };
+}
+
+/**
+ * Recolors every non-transparent pixel keeping its original alpha.
+ * Useful to tint a flat-color layout (anti-aliased edges stay smooth).
+ */
+function recolorNonTransparent(img: Image, hex: string): Image {
+  const { r, g, b } = hexToRgb(hex);
+  const w = img.width;
+  const h = img.height;
+  const out = img.clone();
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const col = out.getPixelAt(x, y);
+      const [, , , a] = Image.colorToRGBA(col);
+      if (a > 0) {
+        out.setPixelAt(x, y, Image.rgbaToColor(r, g, b, a));
+      }
+    }
+  }
+  return out;
+}
+
 // Local TTF in Supabase Storage (public)
 const FONT_URL =
   "https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/assets/OpenSans-SemiBold.ttf";
@@ -57,33 +89,6 @@ function cover(img: Image, targetW: number, targetH: number): Image {
   return resized.crop(x, y, targetW, targetH);
 }
 
-// Gera uma camada sólida na cor desejada copiando o alpha do frame (loop seguro)
-/*function colorizeFromAlpha(mask: Image, hex: string): Image {
-  const { r, g, b, a } = hexToRgba(hex);
-  const out = new Image(mask.width, mask.height).fill(0x00000000);
-  const baseColor = Image.rgbaToColor(r, g, b, a);
-  for (let y = 0; y < mask.height; y++) {
-    for (let x = 0; x < mask.width; x++) {
-      const { a: ma } = mask.getRGBAAt(x, y);
-      if (ma > 0) out.setPixelAt(x, y, Image.rgbaToColor(r, g, b, ma));
-    }
-  }
-  return out;
-}
-
-function hexToRgba(hex: string) {
-  const h = hex.replace("#", "");
-  const n = parseInt(h.length === 3
-    ? h.split("").map(ch => ch + ch).join("")
-    : h, 16);
-  return {
-    r: (n >> 16) & 255,
-    g: (n >> 8) & 255,
-    b: n & 255,
-    a: 255,
-  };
-}*/
-
 // Load the TTF from your Storage (cached)
 async function loadTTFBytes(): Promise<Uint8Array> {
   if (FONT_CACHE) return FONT_CACHE;
@@ -91,46 +96,6 @@ async function loadTTFBytes(): Promise<Uint8Array> {
   FONT_CACHE = new Uint8Array(ab);
   return FONT_CACHE;
 }
-
-/*function bufferToUint8Array(ab: ArrayBuffer) {
-  return new Uint8Array(ab);
-}
-
-function drawRoundedRect(
-  canvas: Image,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-  colorHex: string,
-) {
-  // clamp radius
-  r = Math.max(0, Math.min(r, Math.floor(Math.min(w, h) / 2)));
-  const { r: cr, g: cg, b: cb, a: ca } = hexToRgba(colorHex);
-  const color = Image.rgbaToColor(cr, cg, cb, ca);
-  const tmp = new Image(w, h).fill(0x00000000);
-
-  for (let yy = 0; yy < h; yy++) {
-    for (let xx = 0; xx < w; xx++) {
-      const inCoreX = (xx >= r) && (xx < w - r);
-      const inCoreY = (yy >= r) && (yy < h - r);
-      if (inCoreX || inCoreY) {
-        tmp.setPixelAt(xx, yy, color);
-        continue;
-      }
-      // corner centers
-      const cx = (xx < r) ? r : (w - 1 - r);
-      const cy = (yy < r) ? r : (h - 1 - r);
-      const dx = xx - cx;
-      const dy = yy - cy;
-      if ((dx * dx + dy * dy) <= (r * r)) {
-        tmp.setPixelAt(xx, yy, color);
-      }
-    }
-  }
-  canvas.composite(tmp, x, y);
-}*/
   
 async function fitTextRender(
   text: string,
@@ -230,13 +195,8 @@ serve(async (req) => {
       ? framesRaw0.resize(CANVAS_W, CANVAS_H)
       : framesRaw0;
 
-    // re-rasteriza em um buffer "limpo" para evitar meta estranha de PNG
-    //const framesSafe = new Image(framesRaw.width, framesRaw.height).fill(0x00000000);
-    //framesSafe.composite(framesRaw, 0, 0);
-
-    // Recolor seguro por alpha
-    //const framesTinted = colorizeFromAlpha(framesSafe, frameColor);*/
-    canvas.composite(framesRaw, 0, 0);
+    const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
+    canvas.composite(tintedFrames, 0, 0);
 
     // Name bars + texts
     for (let i = 0; i < cands.length; i++) {
@@ -280,7 +240,6 @@ serve(async (req) => {
     const { data: pub } = supabase.storage.from(bucket).getPublicUrl(outputPath);
 
     return Response.json({
-      supabaseUrl: SUPABASE_URL,
       publicUrl: pub.publicUrl
     });
   } catch (err) {
