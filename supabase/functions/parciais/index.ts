@@ -113,20 +113,35 @@ function normalizeHex6(input?: string, fallback = 0x0d0d0dff): number {
   return Number.isNaN(val) ? fallback : (val >>> 0);
 }
 
+function embolden(img: Image, strength = 1): Image {
+  const out = new Image(img.width + strength, img.height + strength);
+  out.fill(0x00000000);
+  for (let dx = 0; dx <= strength; dx++) {
+    for (let dy = 0; dy <= strength; dy++) {
+      out.composite(img, dx, dy);
+    }
+  }
+  return out;
+}
+
 async function fitTextRender(
   text: string,
   maxWidth: number,
   startSize = 20,
   minSize = 16,
   color?: string, // aceita apenas hex sem alpha; se inválido usa default
+  bold = false,
+  boldStrength = 1, // 1–2 geralmente é suficiente
 ): Promise<{ img: Image; size: number }> {
   const fontBytes = await loadTTFBytes();
   const colorNum = normalizeHex6(color);
   for (let s = startSize; s >= minSize; s -= 2) {
-    const img = await Image.renderText(fontBytes, s, text, colorNum);
+    let img = await Image.renderText(fontBytes, s, text, colorNum);
+    if (bold) img = embolden(img, boldStrength);
     if (img.width <= maxWidth) return { img, size: s };
   }
-  const img = await Image.renderText(fontBytes, minSize, text, colorNum);
+  let img = await Image.renderText(fontBytes, minSize, text, colorNum);
+  if (bold) img = embolden(img, boldStrength);
   return { img, size: minSize };
 }
 // ---------- HTTP ----------
@@ -218,7 +233,7 @@ serve(async (req) => {
     // Name bars + texts
     for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
-      const name = ((parseInt(i) + 1) + " - " + cands[i].name).toUpperCase();
+      const name = ((parseInt(i) + 1) + "° " + cands[i].name).toUpperCase();
 
       // Bar spans photo width (plus slight inset if your overlay asks for it)
       const barX = slot.x + 15;
@@ -235,7 +250,9 @@ serve(async (req) => {
         barW - padding * 2,
         20,
         16,
-        '#5F19DD'
+        '#5F19DD',
+        true,
+        2
       );
       const textX = barX + padding;
       const textY = barY + Math.floor((barH - nameImg.height) / 2);
