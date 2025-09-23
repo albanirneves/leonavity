@@ -156,23 +156,18 @@ serve(async (req) => {
     }
 
     const {
-      backgroundUrl,
-      framesUrl,
       frameColor = "#FFD44A",
       outputPath = `colagens/${crypto.randomUUID()}.png`,
       id_event,
       id_category,
       candidates = [],
-      photosBaseUrl,
       bucket = DEFAULT_BUCKET,
     } = await req.json();
 
-    if (!backgroundUrl || !framesUrl) {
-      return Response.json(
-        { error: "Missing backgroundUrl or framesUrl" },
-        { status: 400 },
-      );
-    }
+    const photosBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/candidates`;
+    const backgroundUrl = `${photosBaseUrl}/assets/background_layout_event_${id_event}.png`;
+    const framesUrl = `${photosBaseUrl}/assets/layout_parciais.png`;
+
     if (!Array.isArray(candidates) || candidates.length < 1 || candidates.length > 6) {
       return Response.json({ error: "Provide 1 to 6 candidates in 'candidates'." }, { status: 400 });
     }
