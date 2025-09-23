@@ -97,7 +97,7 @@ async function loadTTFBytes(): Promise<Uint8Array> {
   FONT_CACHE = new Uint8Array(ab);
   return FONT_CACHE;
 }
-  
+  //update
 function normalizeHex6(input?: string, fallback = 0x0d0d0dff): number {
   if (!input) return fallback;
   if (typeof input !== 'string') return fallback;
