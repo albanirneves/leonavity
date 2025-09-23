@@ -62,8 +62,7 @@ function recolorNonTransparent(img: Image, hex: string): Image {
 }
 
 // Local TTF in Supabase Storage (public)
-const FONT_URL =
-  "https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/assets/OpenSans-SemiBold.ttf";
+const FONT_URL = SUPABASE_URL + "/storage/v1/object/public/candidates/assets/OpenSans-SemiBold.ttf";
 let FONT_CACHE: Uint8Array | null = null;
 
 // ---------- Helpers ----------
@@ -124,12 +123,13 @@ serve(async (req) => {
 
     const {
       frameColor = "#FFD44A",
-      outputPath = `colagens/${crypto.randomUUID()}.png`,
       id_event,
       id_category,
       candidates = [],
       bucket = DEFAULT_BUCKET,
     } = await req.json();
+
+    const outputPath = `parciais/event_${id_event}_category_${id_category}.png`,
 
     const photosBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/candidates`;
     const backgroundUrl = `${photosBaseUrl}/assets/background_layout_event_${id_event}.png`;
