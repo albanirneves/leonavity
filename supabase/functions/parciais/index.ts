@@ -20,11 +20,11 @@ const NAME_FONT_START = 24;
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
   { x: 128,  y: 176 },
-  { x: 446, y: 176 },
+  { x: 444, y: 176 },
   { x: 128,  y: 587 },
-  { x: 446, y: 587 },
+  { x: 444, y: 587 },
   { x: 128,  y: 995 },
-  { x: 446, y: 995 },
+  { x: 444, y: 995 },
 ] as const;
 
 // Local TTF in Supabase Storage (public)
@@ -285,6 +285,7 @@ serve(async (req) => {
     const { data: pub } = supabase.storage.from(bucket).getPublicUrl(outputPath);
 
     return Response.json({
+      supabaseUrl: SUPABASE_URL,
       publicUrl: pub.publicUrl
     });
   } catch (err) {
