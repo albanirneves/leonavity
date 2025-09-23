@@ -122,14 +122,14 @@ serve(async (req) => {
     }
 
     const {
-      frameColor = "#FFD44A",
+      frameColor = "#fddf59",
       id_event,
       id_category,
       candidates = [],
       bucket = DEFAULT_BUCKET,
     } = await req.json();
 
-    const outputPath = `parciais/event_${id_event}_category_${id_category}.png`,
+    const outputPath = `parciais/event_${id_event}_category_${id_category}.png`;
 
     const photosBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/candidates`;
     const backgroundUrl = `${photosBaseUrl}/assets/background_layout_event_${id_event}.png`;
