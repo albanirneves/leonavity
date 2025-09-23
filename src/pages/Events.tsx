@@ -83,6 +83,7 @@ export default function Events() {
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [layoutColor, setLayoutColor] = useState('#fddf59');
+  const [tempLayoutColor, setTempLayoutColor] = useState('#fddf59');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
@@ -419,7 +420,9 @@ export default function Events() {
   const openParciaisModal = async (event: Event, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setSelectedEventForParciais(event);
-    setLayoutColor(event.layout_color || '#fddf59');
+    const eventColor = event.layout_color || '#fddf59';
+    setLayoutColor(eventColor);
+    setTempLayoutColor(eventColor);
     setIsParciaisDialogOpen(true);
     
     // Check if background image exists
@@ -626,24 +629,24 @@ export default function Events() {
     }
   };
 
-  const handleLayoutColorChange = async (color: string) => {
+  const handleLayoutColorChange = async () => {
     if (!selectedEventForParciais) return;
 
     try {
       const { error } = await supabase
         .from('events')
-        .update({ layout_color: color })
+        .update({ layout_color: tempLayoutColor })
         .eq('id', selectedEventForParciais.id);
 
       if (error) throw error;
 
-      setLayoutColor(color);
-      setSelectedEventForParciais({ ...selectedEventForParciais, layout_color: color });
+      setLayoutColor(tempLayoutColor);
+      setSelectedEventForParciais({ ...selectedEventForParciais, layout_color: tempLayoutColor });
       
       // Update the events list
       setEvents(prev => prev.map(event => 
         event.id === selectedEventForParciais.id 
-          ? { ...event, layout_color: color }
+          ? { ...event, layout_color: tempLayoutColor }
           : event
       ));
       
@@ -1171,7 +1174,7 @@ export default function Events() {
               </div>
               
               <div className="flex gap-4">
-                <div className="flex-1">
+                <div className="flex-1 space-y-4">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1202,8 +1205,29 @@ export default function Events() {
                     )}
                   </div>
                   
+                  {/* Layout Color Section */}
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">Cor do Layout</Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={tempLayoutColor}
+                        onChange={(e) => setTempLayoutColor(e.target.value)}
+                        className="w-12 h-10 border rounded cursor-pointer"
+                      />
+                      <span className="text-sm font-mono">{tempLayoutColor}</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleLayoutColorChange}
+                      >
+                        Salvar Cor
+                      </Button>
+                    </div>
+                  </div>
+                  
                   {isUploadingImage && (
-                    <div className="text-sm text-muted-foreground mt-2">
+                    <div className="text-sm text-muted-foreground">
                       Fazendo upload e ajustando para formato 9:16...
                     </div>
                   )}
@@ -1219,22 +1243,6 @@ export default function Events() {
                     />
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* Layout Color Section */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">Cor do Layout</Label>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={layoutColor}
-                    onChange={(e) => handleLayoutColorChange(e.target.value)}
-                    className="w-12 h-10 border rounded cursor-pointer"
-                  />
-                  <span className="text-sm font-mono">{layoutColor}</span>
-                </div>
               </div>
             </div>
 
