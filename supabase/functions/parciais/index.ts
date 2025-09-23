@@ -121,6 +121,8 @@ serve(async (req) => {
       return new Response("Use POST", { status: 405 });
     }
 
+    //update
+
     const {
       frameColor = "#fddf59",
       id_event,
