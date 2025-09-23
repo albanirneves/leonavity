@@ -581,12 +581,14 @@ export default function Events() {
         throw uploadError;
       }
       
-      // Get the public URL
+      // Get the public URL with cache busting
       const { data } = await supabase.storage
         .from('candidates')
         .getPublicUrl(imagePath);
       
-      setBackgroundImageUrl(data.publicUrl);
+      // Add cache busting to force refresh of the thumbnail
+      const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`;
+      setBackgroundImageUrl(cacheBustedUrl);
       toast({ title: 'Sucesso', description: 'Background Parciais atualizado com sucesso' });
       
     } catch (error) {
