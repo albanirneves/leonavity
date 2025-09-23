@@ -33,6 +33,7 @@ interface Event {
   created_at: string;
   send_ranking?: ScheduleItem[] | null;
   msg_saudacao?: string;
+  layout_color?: string;
 }
 
 interface Account {
@@ -81,6 +82,7 @@ export default function Events() {
   // Background image states
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [layoutColor, setLayoutColor] = useState('#fddf59');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
@@ -417,6 +419,7 @@ export default function Events() {
   const openParciaisModal = async (event: Event, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setSelectedEventForParciais(event);
+    setLayoutColor(event.layout_color || '#fddf59');
     setIsParciaisDialogOpen(true);
     
     // Check if background image exists
@@ -620,6 +623,34 @@ export default function Events() {
     } catch (error) {
       console.error('Error removing image:', error);
       toast({ title: 'Erro', description: 'Erro ao remover a imagem', variant: 'destructive' });
+    }
+  };
+
+  const handleLayoutColorChange = async (color: string) => {
+    if (!selectedEventForParciais) return;
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ layout_color: color })
+        .eq('id', selectedEventForParciais.id);
+
+      if (error) throw error;
+
+      setLayoutColor(color);
+      setSelectedEventForParciais({ ...selectedEventForParciais, layout_color: color });
+      
+      // Update the events list
+      setEvents(prev => prev.map(event => 
+        event.id === selectedEventForParciais.id 
+          ? { ...event, layout_color: color }
+          : event
+      ));
+      
+      toast({ title: 'Sucesso', description: 'Cor do layout atualizada com sucesso' });
+    } catch (error) {
+      console.error('Error updating layout color:', error);
+      toast({ title: 'Erro', description: 'Erro ao atualizar a cor do layout', variant: 'destructive' });
     }
   };
 
@@ -1188,6 +1219,22 @@ export default function Events() {
                     />
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Layout Color Section */}
+            <div className="space-y-4">
+              <Label className="text-base font-medium">Cor do Layout</Label>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={layoutColor}
+                    onChange={(e) => handleLayoutColorChange(e.target.value)}
+                    className="w-12 h-10 border rounded cursor-pointer"
+                  />
+                  <span className="text-sm font-mono">{layoutColor}</span>
+                </div>
               </div>
             </div>
 
