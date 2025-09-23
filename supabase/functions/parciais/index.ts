@@ -252,7 +252,7 @@ serve(async (req) => {
         16,
         '#5F19DD',
         true,
-        2
+        1
       );
       const textX = barX + padding;
       const textY = barY + Math.floor((barH - nameImg.height) / 2);
