@@ -49,11 +49,13 @@ function recolorNonTransparent(img: Image, hex: string): Image {
   const out = img.clone();
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const col = out.getPixelAt(x, y);
-      const [, , , a] = Image.colorToRGBA(col);
-      if (a > 0) {
-        out.setPixelAt(x, y, Image.rgbaToColor(r, g, b, a));
-      }
+      try {
+        const col = out.getPixelAt(x, y);
+        const [, , , a] = Image.colorToRGBA(col);
+        if (a > 0) {
+          out.setPixelAt(x, y, Image.rgbaToColor(r, g, b, a));
+        }
+      } catch (error) {}
     }
   }
   return out;
