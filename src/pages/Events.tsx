@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Settings, Search, Edit, Trash2, MessageSquare, BarChart3 } from 'lucide-react';
+import { Plus, Settings, Search, Edit, Trash2, MessageSquare, BarChart3, Upload, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -77,6 +77,11 @@ export default function Events() {
   const [selectedEventForParciais, setSelectedEventForParciais] = useState<Event | null>(null);
   const [newScheduleWeekday, setNewScheduleWeekday] = useState(1);
   const [newScheduleHour, setNewScheduleHour] = useState('09:00');
+  
+  // Background image states
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
 
@@ -409,10 +414,13 @@ export default function Events() {
     setIsEditCategoryDialogOpen(true);
   };
 
-  const openParciaisModal = (event: Event, e?: React.MouseEvent) => {
+  const openParciaisModal = async (event: Event, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setSelectedEventForParciais(event);
     setIsParciaisDialogOpen(true);
+    
+    // Check if background image exists
+    await checkBackgroundImage(event.id);
   };
 
   const handleAddSchedule = async () => {
@@ -474,6 +482,143 @@ export default function Events() {
   const getWeekdayName = (weekday: number) => {
     const days = ['', 'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     return days[weekday] || '';
+  };
+
+  // Background image functions
+  const checkBackgroundImage = async (eventId: number) => {
+    const imagePath = `assets/background_layout_event_${eventId}.png`;
+    const { data } = await supabase.storage
+      .from('candidates')
+      .getPublicUrl(imagePath);
+    
+    // Check if the image actually exists by trying to fetch it
+    try {
+      const response = await fetch(data.publicUrl);
+      if (response.ok) {
+        setBackgroundImageUrl(data.publicUrl);
+      } else {
+        setBackgroundImageUrl(null);
+      }
+    } catch {
+      setBackgroundImageUrl(null);
+    }
+  };
+
+  const resizeImageToStoryFormat = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      
+      img.onload = () => {
+        // Story format: 9:16 aspect ratio
+        const targetWidth = 1080;
+        const targetHeight = 1920;
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        // Calculate scaling to cover the entire canvas
+        const scaleX = targetWidth / img.width;
+        const scaleY = targetHeight / img.height;
+        const scale = Math.max(scaleX, scaleY);
+        
+        const scaledWidth = img.width * scale;
+        const scaledHeight = img.height * scale;
+        
+        // Center the image
+        const x = (targetWidth - scaledWidth) / 2;
+        const y = (targetHeight - scaledHeight) / 2;
+        
+        // Fill background with white
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+        
+        // Draw the image
+        ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const resizedFile = new File([blob], file.name, {
+              type: 'image/png',
+              lastModified: Date.now(),
+            });
+            resolve(resizedFile);
+          }
+        }, 'image/png', 0.9);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedEventForParciais) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Erro', description: 'Por favor, selecione um arquivo de imagem', variant: 'destructive' });
+      return;
+    }
+    
+    setIsUploadingImage(true);
+    
+    try {
+      // Resize image to story format (9:16)
+      const resizedFile = await resizeImageToStoryFormat(file);
+      
+      const imagePath = `assets/background_layout_event_${selectedEventForParciais.id}.png`;
+      
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('candidates')
+        .upload(imagePath, resizedFile, {
+          upsert: true,
+          contentType: 'image/png'
+        });
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      // Get the public URL
+      const { data } = await supabase.storage
+        .from('candidates')
+        .getPublicUrl(imagePath);
+      
+      setBackgroundImageUrl(data.publicUrl);
+      toast({ title: 'Sucesso', description: 'Background Parciais atualizado com sucesso' });
+      
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({ title: 'Erro', description: 'Erro ao fazer upload da imagem', variant: 'destructive' });
+    } finally {
+      setIsUploadingImage(false);
+      // Clear the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveBackgroundImage = async () => {
+    if (!selectedEventForParciais) return;
+    
+    const imagePath = `assets/background_layout_event_${selectedEventForParciais.id}.png`;
+    
+    try {
+      const { error } = await supabase.storage
+        .from('candidates')
+        .remove([imagePath]);
+      
+      if (error) throw error;
+      
+      setBackgroundImageUrl(null);
+      toast({ title: 'Sucesso', description: 'Background Parciais removido com sucesso' });
+    } catch (error) {
+      console.error('Error removing image:', error);
+      toast({ title: 'Erro', description: 'Erro ao remover a imagem', variant: 'destructive' });
+    }
   };
 
   if (loading) {
@@ -979,67 +1124,134 @@ export default function Events() {
 
       {/* Parciais Modal */}
       <Dialog open={isParciaisDialogOpen} onOpenChange={setIsParciaisDialogOpen}>
-        <DialogContent className="mx-4 my-4 max-w-2xl">
+        <DialogContent className="mx-4 my-4 max-w-3xl">
           <DialogHeader>
             <DialogTitle>Gerenciar Parciais - {selectedEventForParciais?.name}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            {/* Add new schedule form */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <Label htmlFor="weekday">Dia da Semana</Label>
-                <Select value={newScheduleWeekday.toString()} onValueChange={(value) => setNewScheduleWeekday(parseInt(value))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar dia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Domingo</SelectItem>
-                    <SelectItem value="2">Segunda-feira</SelectItem>
-                    <SelectItem value="3">Terça-feira</SelectItem>
-                    <SelectItem value="4">Quarta-feira</SelectItem>
-                    <SelectItem value="5">Quinta-feira</SelectItem>
-                    <SelectItem value="6">Sexta-feira</SelectItem>
-                    <SelectItem value="7">Sábado</SelectItem>
-                  </SelectContent>
-                </Select>
+          <div className="space-y-6">
+            {/* Background Image Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">Background Parciais</Label>
+                <div className="text-sm text-muted-foreground">Formato 9:16 (Stories)</div>
               </div>
-              <div className="flex-1">
-                <Label htmlFor="hour">Horário</Label>
-                <Input
-                  id="hour"
-                  type="time"
-                  value={newScheduleHour}
-                  onChange={(e) => setNewScheduleHour(e.target.value)}
-                />
-              </div>
-              <Button onClick={handleAddSchedule}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {/* Schedule list */}
-            <div className="space-y-2">
-              {selectedEventForParciais?.send_ranking && selectedEventForParciais.send_ranking.length > 0 ? (
-                selectedEventForParciais.send_ranking.map((schedule, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 border rounded">
-                    <span>
-                      {getWeekdayName(schedule.weekday)} - {schedule.hour}
-                    </span>
+              
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveSchedule(index)}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingImage}
+                      className="flex-1"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Upload className="h-4 w-4 mr-2" />
+                      {backgroundImageUrl ? 'Substituir Imagem' : 'Upload Imagem'}
                     </Button>
+                    
+                    {backgroundImageUrl && (
+                      <Button
+                        variant="outline"
+                        onClick={handleRemoveBackgroundImage}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  Nenhum horário configurado
-                </p>
-              )}
+                  
+                  {isUploadingImage && (
+                    <div className="text-sm text-muted-foreground mt-2">
+                      Fazendo upload e ajustando para formato 9:16...
+                    </div>
+                  )}
+                </div>
+                
+                {/* Image Preview */}
+                {backgroundImageUrl && (
+                  <div className="w-20 h-36 border rounded-lg overflow-hidden bg-gray-100">
+                    <img
+                      src={backgroundImageUrl}
+                      alt="Background Parciais"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t" />
+            
+            {/* Scheduling Section */}
+            <div className="space-y-4">
+              <Label className="text-base font-medium">Horários de Envio</Label>
+              
+              {/* Add new schedule form */}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Label htmlFor="weekday">Dia da Semana</Label>
+                  <Select value={newScheduleWeekday.toString()} onValueChange={(value) => setNewScheduleWeekday(parseInt(value))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecionar dia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Domingo</SelectItem>
+                      <SelectItem value="2">Segunda-feira</SelectItem>
+                      <SelectItem value="3">Terça-feira</SelectItem>
+                      <SelectItem value="4">Quarta-feira</SelectItem>
+                      <SelectItem value="5">Quinta-feira</SelectItem>
+                      <SelectItem value="6">Sexta-feira</SelectItem>
+                      <SelectItem value="7">Sábado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="hour">Horário</Label>
+                  <Input
+                    id="hour"
+                    type="time"
+                    value={newScheduleHour}
+                    onChange={(e) => setNewScheduleHour(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleAddSchedule}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* Schedule list */}
+              <div className="space-y-2">
+                {selectedEventForParciais?.send_ranking && selectedEventForParciais.send_ranking.length > 0 ? (
+                  selectedEventForParciais.send_ranking.map((schedule, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 border rounded">
+                      <span>
+                        {getWeekdayName(schedule.weekday)} - {schedule.hour}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveSchedule(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">
+                    Nenhum horário configurado
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </DialogContent>
