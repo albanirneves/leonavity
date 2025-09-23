@@ -15,7 +15,6 @@ const CANVAS_H = 1365;
 const PHOTO_W = 221;
 const PHOTO_H = 295;
 const NAME_BAR_H = 58;
-const NAME_FONT_START = 24;
 
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
@@ -117,8 +116,8 @@ function normalizeHex6(input?: string, fallback = 0x0d0d0dff): number {
 async function fitTextRender(
   text: string,
   maxWidth: number,
-  startSize = NAME_FONT_START,
-  minSize = 20,
+  startSize = 20,
+  minSize = 16,
   color?: string, // aceita apenas hex sem alpha; se inválido usa default
 ): Promise<{ img: Image; size: number }> {
   const fontBytes = await loadTTFBytes();
@@ -234,9 +233,9 @@ serve(async (req) => {
       const { img: nameImg } = await fitTextRender(
         name,
         barW - padding * 2,
-        NAME_FONT_START,
         20,
-        '#ff3b4b'
+        16,
+        '#5F19DD'
       );
       const textX = barX + padding;
       const textY = barY + Math.floor((barH - nameImg.height) / 2);
