@@ -33,6 +33,7 @@ interface Event {
   created_at: string;
   send_ranking?: ScheduleItem[] | null;
   msg_saudacao?: string;
+  layout_color?: string;
 }
 
 interface Account {
@@ -81,6 +82,8 @@ export default function Events() {
   // Background image states
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [layoutColor, setLayoutColor] = useState('#fddf59');
+  const [tempLayoutColor, setTempLayoutColor] = useState('#fddf59');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
@@ -417,6 +420,9 @@ export default function Events() {
   const openParciaisModal = async (event: Event, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setSelectedEventForParciais(event);
+    const eventColor = event.layout_color || '#fddf59';
+    setLayoutColor(eventColor);
+    setTempLayoutColor(eventColor);
     setIsParciaisDialogOpen(true);
     
     // Check if background image exists
@@ -620,6 +626,34 @@ export default function Events() {
     } catch (error) {
       console.error('Error removing image:', error);
       toast({ title: 'Erro', description: 'Erro ao remover a imagem', variant: 'destructive' });
+    }
+  };
+
+  const handleLayoutColorChange = async () => {
+    if (!selectedEventForParciais) return;
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ layout_color: tempLayoutColor })
+        .eq('id', selectedEventForParciais.id);
+
+      if (error) throw error;
+
+      setLayoutColor(tempLayoutColor);
+      setSelectedEventForParciais({ ...selectedEventForParciais, layout_color: tempLayoutColor });
+      
+      // Update the events list
+      setEvents(prev => prev.map(event => 
+        event.id === selectedEventForParciais.id 
+          ? { ...event, layout_color: tempLayoutColor }
+          : event
+      ));
+      
+      toast({ title: 'Sucesso', description: 'Cor do layout atualizada com sucesso' });
+    } catch (error) {
+      console.error('Error updating layout color:', error);
+      toast({ title: 'Erro', description: 'Erro ao atualizar a cor do layout', variant: 'destructive' });
     }
   };
 
@@ -1126,12 +1160,12 @@ export default function Events() {
 
       {/* Parciais Modal */}
       <Dialog open={isParciaisDialogOpen} onOpenChange={setIsParciaisDialogOpen}>
-        <DialogContent className="mx-4 my-4 max-w-3xl">
+        <DialogContent className="mx-4 my-4 max-w-3xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Gerenciar Parciais - {selectedEventForParciais?.name}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6">
+          <div className="space-y-6 overflow-y-auto max-h-[calc(85vh-8rem)] pr-2">
             {/* Background Image Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1140,7 +1174,7 @@ export default function Events() {
               </div>
               
               <div className="flex gap-4">
-                <div className="flex-1">
+                <div className="flex-1 space-y-4">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1171,8 +1205,42 @@ export default function Events() {
                     )}
                   </div>
                   
+                  {/* Layout Color Section */}
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">Cor do Layout</Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={tempLayoutColor}
+                        onChange={(e) => setTempLayoutColor(e.target.value)}
+                        className="w-12 h-10 border rounded cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        value={tempLayoutColor}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Validate hex color format
+                          if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
+                            setTempLayoutColor(value);
+                          }
+                        }}
+                        placeholder="#000000"
+                        className="w-24 font-mono text-sm"
+                        maxLength={7}
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleLayoutColorChange}
+                      >
+                        Salvar Cor
+                      </Button>
+                    </div>
+                  </div>
+                  
                   {isUploadingImage && (
-                    <div className="text-sm text-muted-foreground mt-2">
+                    <div className="text-sm text-muted-foreground">
                       Fazendo upload e ajustando para formato 9:16...
                     </div>
                   )}

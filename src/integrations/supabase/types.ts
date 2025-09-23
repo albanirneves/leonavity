@@ -125,6 +125,7 @@ export type Database = {
           end_vote: string
           id: number
           id_account: number
+          layout_color: string | null
           msg_saudacao: string | null
           name: string
           pix_tax: number | null
@@ -139,6 +140,7 @@ export type Database = {
           end_vote: string
           id?: number
           id_account: number
+          layout_color?: string | null
           msg_saudacao?: string | null
           name: string
           pix_tax?: number | null
@@ -153,6 +155,7 @@ export type Database = {
           end_vote?: string
           id?: number
           id_account?: number
+          layout_color?: string | null
           msg_saudacao?: string | null
           name?: string
           pix_tax?: number | null
@@ -231,6 +234,7 @@ export type Database = {
           id_category: number | null
           id_event: number | null
           info_confirmed: boolean
+          last_interation: string | null
           payment_id: string | null
           payment_payload: Json | null
           payment_status: string
@@ -256,6 +260,7 @@ export type Database = {
           id_category?: number | null
           id_event?: number | null
           info_confirmed?: boolean
+          last_interation?: string | null
           payment_id?: string | null
           payment_payload?: Json | null
           payment_status?: string
@@ -281,6 +286,7 @@ export type Database = {
           id_category?: number | null
           id_event?: number | null
           info_confirmed?: boolean
+          last_interation?: string | null
           payment_id?: string | null
           payment_payload?: Json | null
           payment_status?: string
