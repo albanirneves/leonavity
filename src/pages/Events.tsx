@@ -1126,12 +1126,12 @@ export default function Events() {
 
       {/* Parciais Modal */}
       <Dialog open={isParciaisDialogOpen} onOpenChange={setIsParciaisDialogOpen}>
-        <DialogContent className="mx-4 my-4 max-w-3xl">
+        <DialogContent className="mx-4 my-4 max-w-3xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Gerenciar Parciais - {selectedEventForParciais?.name}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6">
+          <div className="space-y-6 overflow-y-auto max-h-[calc(85vh-8rem)] pr-2">
             {/* Background Image Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
