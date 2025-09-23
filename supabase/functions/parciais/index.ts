@@ -98,22 +98,38 @@ async function loadTTFBytes(): Promise<Uint8Array> {
   return FONT_CACHE;
 }
   
+function normalizeHex6(input?: string, fallback = 0x0d0d0dff): number {
+  if (!input) return fallback;
+  if (typeof input !== 'string') return fallback;
+  let s = input.trim().toLowerCase();
+  if (!s.startsWith('#')) return fallback;
+  let hex = s.slice(1);
+  // permite #rgb -> #rrggbb
+  if (hex.length === 3) {
+    hex = hex.split('').map(ch => ch + ch).join('');
+  }
+  // aceita somente #rrggbb (sem alpha)
+  if (hex.length !== 6) return fallback;
+  const val = Number.parseInt(hex + 'ff', 16); // adiciona alpha FF
+  return Number.isNaN(val) ? fallback : (val >>> 0);
+}
+
 async function fitTextRender(
   text: string,
   maxWidth: number,
   startSize = NAME_FONT_START,
   minSize = 20,
-  color = 0x0d0d0dff,
+  color?: string, // aceita apenas hex sem alpha; se inválido usa default
 ): Promise<{ img: Image; size: number }> {
   const fontBytes = await loadTTFBytes();
+  const colorNum = normalizeHex6(color);
   for (let s = startSize; s >= minSize; s -= 2) {
-    const img = await Image.renderText(fontBytes, s, text, color);
+    const img = await Image.renderText(fontBytes, s, text, colorNum);
     if (img.width <= maxWidth) return { img, size: s };
   }
-  const img = await Image.renderText(fontBytes, minSize, text, color);
+  const img = await Image.renderText(fontBytes, minSize, text, colorNum);
   return { img, size: minSize };
 }
-
 // ---------- HTTP ----------
 serve(async (req) => {
   try {
@@ -222,7 +238,7 @@ serve(async (req) => {
         barW - padding * 2,
         NAME_FONT_START,
         20,
-        0x0d0d0dff
+        '#ff3b4b'
       );
       const textX = barX + padding;
       const textY = barY + Math.floor((barH - nameImg.height) / 2);
@@ -245,7 +261,7 @@ serve(async (req) => {
 
     return Response.json({
       publicUrl: pub.publicUrl
-    });
+    }); 
   } catch (err) {
     console.error(err);
     return Response.json({ error: String(err?.message ?? err) }, { status: 500 });
