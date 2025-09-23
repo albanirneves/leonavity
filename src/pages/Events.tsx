@@ -1215,7 +1215,20 @@ export default function Events() {
                         onChange={(e) => setTempLayoutColor(e.target.value)}
                         className="w-12 h-10 border rounded cursor-pointer"
                       />
-                      <span className="text-sm font-mono">{tempLayoutColor}</span>
+                      <Input
+                        type="text"
+                        value={tempLayoutColor}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Validate hex color format
+                          if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
+                            setTempLayoutColor(value);
+                          }
+                        }}
+                        placeholder="#000000"
+                        className="w-24 font-mono text-sm"
+                        maxLength={7}
+                      />
                       <Button 
                         variant="outline" 
                         size="sm"
