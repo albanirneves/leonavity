@@ -129,7 +129,6 @@ export type Database = {
           msg_saudacao: string | null
           name: string
           pix_tax: number | null
-          send_ranking: Json | null
           start_vote: string
           vote_value: number
         }
@@ -144,7 +143,6 @@ export type Database = {
           msg_saudacao?: string | null
           name: string
           pix_tax?: number | null
-          send_ranking?: Json | null
           start_vote: string
           vote_value: number
         }
@@ -159,7 +157,6 @@ export type Database = {
           msg_saudacao?: string | null
           name?: string
           pix_tax?: number | null
-          send_ranking?: Json | null
           start_vote?: string
           vote_value?: number
         }
@@ -194,6 +191,36 @@ export type Database = {
           display_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      send_ranking: {
+        Row: {
+          created_at: string
+          hour: string
+          id: number
+          id_event: number
+          message: string | null
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          created_at?: string
+          hour: string
+          id?: number
+          id_event: number
+          message?: string | null
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          created_at?: string
+          hour?: string
+          id?: number
+          id_event?: number
+          message?: string | null
+          updated_at?: string
+          weekday?: number
         }
         Relationships: []
       }

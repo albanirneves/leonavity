@@ -16,8 +16,10 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 
 interface ScheduleItem {
+  id?: number;
   weekday: number;
   hour: string;
+  message?: string;
 }
 
 interface Event {
@@ -78,6 +80,12 @@ export default function Events() {
   const [selectedEventForParciais, setSelectedEventForParciais] = useState<Event | null>(null);
   const [newScheduleWeekday, setNewScheduleWeekday] = useState(1);
   const [newScheduleHour, setNewScheduleHour] = useState('09:00');
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
+  
+  // Message dialog states
+  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+  const [selectedScheduleItem, setSelectedScheduleItem] = useState<ScheduleItem | null>(null);
+  const [scheduleMessage, setScheduleMessage] = useState('');
   
   // Background image states
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
@@ -423,6 +431,27 @@ export default function Events() {
     const eventColor = event.layout_color || '#fddf59';
     setLayoutColor(eventColor);
     setTempLayoutColor(eventColor);
+    
+    // Load schedule items from new table
+    try {
+      const { data: scheduleData, error } = await supabase
+        .from('send_ranking')
+        .select('*')
+        .eq('id_event', event.id)
+        .order('weekday', { ascending: true })
+        .order('hour', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching schedule:', error);
+        setScheduleItems([]);
+      } else {
+        setScheduleItems(scheduleData || []);
+      }
+    } catch (error) {
+      console.error('Error loading schedule:', error);
+      setScheduleItems([]);
+    }
+    
     setIsParciaisDialogOpen(true);
     
     // Check if background image exists
@@ -432,56 +461,104 @@ export default function Events() {
   const handleAddSchedule = async () => {
     if (!selectedEventForParciais) return;
 
-    const currentSchedules = selectedEventForParciais.send_ranking || [];
-    const newSchedule: ScheduleItem = {
+    const newSchedule = {
+      hour: newScheduleHour,
       weekday: newScheduleWeekday,
-      hour: newScheduleHour
+      message: ''
     };
-
-    const updatedSchedules = [...currentSchedules, newSchedule];
-
-    const { error } = await supabase
-      .from('events')
-      .update({ send_ranking: updatedSchedules as any })
-      .eq('id', selectedEventForParciais.id);
-
-    if (error) {
-      toast({ title: 'Erro', description: 'Erro ao adicionar horário', variant: 'destructive' });
-    } else {
-      toast({ title: 'Sucesso', description: 'Horário adicionado com sucesso' });
-      // Update local state
-      setSelectedEventForParciais({
-        ...selectedEventForParciais,
-        send_ranking: updatedSchedules
-      });
-      fetchEvents();
-      // Reset form
+    
+    try {
+      const { data, error } = await supabase
+        .from('send_ranking')
+        .insert({
+          id_event: selectedEventForParciais.id,
+          hour: newSchedule.hour,
+          weekday: newSchedule.weekday,
+          message: newSchedule.message
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setScheduleItems([...scheduleItems, { ...newSchedule, id: data.id }]);
       setNewScheduleWeekday(1);
       setNewScheduleHour('09:00');
+      
+      toast({ title: 'Sucesso', description: 'Horário adicionado com sucesso' });
+    } catch (error) {
+      console.error('Error adding schedule item:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar horário de envio.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleRemoveSchedule = async (index: number) => {
-    if (!selectedEventForParciais) return;
+  const handleRemoveSchedule = async (item: ScheduleItem, index: number) => {
+    if (item.id) {
+      try {
+        const { error } = await supabase
+          .from('send_ranking')
+          .delete()
+          .eq('id', item.id);
+        
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error removing schedule item:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao remover horário de envio.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    setScheduleItems(scheduleItems.filter((_, i) => i !== index));
+    toast({ title: 'Sucesso', description: 'Horário removido com sucesso' });
+  };
 
-    const currentSchedules = selectedEventForParciais.send_ranking || [];
-    const updatedSchedules = currentSchedules.filter((_, i) => i !== index);
+  const openMessageDialog = (item: ScheduleItem) => {
+    setSelectedScheduleItem(item);
+    setScheduleMessage(item.message || '');
+    setIsMessageDialogOpen(true);
+  };
 
-    const { error } = await supabase
-      .from('events')
-      .update({ send_ranking: updatedSchedules as any })
-      .eq('id', selectedEventForParciais.id);
-
-    if (error) {
-      toast({ title: 'Erro', description: 'Erro ao remover horário', variant: 'destructive' });
-    } else {
-      toast({ title: 'Sucesso', description: 'Horário removido com sucesso' });
+  const handleSaveMessage = async () => {
+    if (!selectedScheduleItem || !selectedScheduleItem.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('send_ranking')
+        .update({ message: scheduleMessage })
+        .eq('id', selectedScheduleItem.id);
+      
+      if (error) throw error;
+      
       // Update local state
-      setSelectedEventForParciais({
-        ...selectedEventForParciais,
-        send_ranking: updatedSchedules
+      setScheduleItems(scheduleItems.map(item => 
+        item.id === selectedScheduleItem.id 
+          ? { ...item, message: scheduleMessage }
+          : item
+      ));
+      
+      setIsMessageDialogOpen(false);
+      setSelectedScheduleItem(null);
+      setScheduleMessage('');
+      
+      toast({
+        title: "Sucesso",
+        description: "Mensagem salva com sucesso.",
       });
-      fetchEvents();
+    } catch (error) {
+      console.error('Error saving message:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar mensagem.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1301,19 +1378,29 @@ export default function Events() {
               
               {/* Schedule list */}
               <div className="space-y-2">
-                {selectedEventForParciais?.send_ranking && selectedEventForParciais.send_ranking.length > 0 ? (
-                  selectedEventForParciais.send_ranking.map((schedule, index) => (
+                {scheduleItems && scheduleItems.length > 0 ? (
+                  scheduleItems.map((schedule, index) => (
                     <div key={index} className="flex justify-between items-center p-3 border rounded">
                       <span>
                         {getWeekdayName(schedule.weekday)} - {schedule.hour}
                       </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRemoveSchedule(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openMessageDialog(schedule)}
+                          title="Editar mensagem"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveSchedule(schedule, index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -1322,6 +1409,34 @@ export default function Events() {
                   </p>
                 )}
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Dialog */}
+      <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Mensagem do Horário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Mensagem:</Label>
+              <Textarea
+                value={scheduleMessage}
+                onChange={(e) => setScheduleMessage(e.target.value)}
+                placeholder="Digite a mensagem que será enviada neste horário..."
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveMessage}>
+                Salvar
+              </Button>
             </div>
           </div>
         </DialogContent>
