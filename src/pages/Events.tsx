@@ -74,6 +74,12 @@ export default function Events() {
   const [newScheduleWeekday, setNewScheduleWeekday] = useState(0);
   const [newScheduleHour, setNewScheduleHour] = useState('09:00');
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
+  const [isTestWhatsAppDialogOpen, setIsTestWhatsAppDialogOpen] = useState(false);
+  const [testWhatsAppData, setTestWhatsAppData] = useState({
+    ddd: '',
+    phone: '',
+  });
+  const [isTestingSend, setIsTestingSend] = useState(false);
 
   // Message dialog states
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
@@ -606,6 +612,60 @@ Boa sorte❣️`;
       });
     }
   };
+
+  const handleTestWhatsApp = async () => {
+    if (!testWhatsAppData.ddd || !testWhatsAppData.phone || !selectedEventForParciais) {
+      toast({
+        title: 'Erro',
+        description: 'Preencha todos os campos',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsTestingSend(true);
+
+    try {
+      const number = `55${testWhatsAppData.ddd}${testWhatsAppData.phone}`;
+      
+      const { error } = await supabase.functions.invoke('send_whatsapp', {
+        body: {
+          eventId: selectedEventForParciais.id,
+          number: number,
+          text: scheduleMessage,
+        },
+      });
+
+      if (error) {
+        console.error('Error sending WhatsApp test:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao enviar mensagem de teste',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Mensagem de teste enviada com sucesso',
+      });
+      
+      setIsTestWhatsAppDialogOpen(false);
+      setTestWhatsAppData({ ddd: '', phone: '' });
+
+    } catch (error) {
+      console.error('Error sending WhatsApp test:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao enviar mensagem de teste',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTestingSend(false);
+    }
+  };
+
   const getWeekdayName = (weekday: number) => {
     const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     return days[weekday] || '';
@@ -1332,12 +1392,74 @@ Boa sorte❣️`;
               <Label className="text-sm font-medium">Mensagem:</Label>
               <Textarea value={scheduleMessage} onChange={e => setScheduleMessage(e.target.value)} placeholder="Digite a mensagem que será enviada neste horário..." rows={8} />
             </div>
+            <div className="flex justify-between gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsTestWhatsAppDialogOpen(true)}
+                className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+              >
+                Testar Mensagem
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveMessage}>
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test WhatsApp Dialog */}
+      <Dialog open={isTestWhatsAppDialogOpen} onOpenChange={setIsTestWhatsAppDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Testar Mensagem via WhatsApp</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Número do WhatsApp:</Label>
+              <div className="flex gap-2">
+                <div className="w-20">
+                  <Input value="+55" disabled className="text-center" />
+                </div>
+                <div className="w-20">
+                  <Input 
+                    placeholder="DDD"
+                    value={testWhatsAppData.ddd}
+                    onChange={(e) => setTestWhatsAppData(prev => ({ ...prev, ddd: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
+                    maxLength={2}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input 
+                    placeholder="Número do telefone"
+                    value={testWhatsAppData.phone}
+                    onChange={(e) => setTestWhatsAppData(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
+                    maxLength={9}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Mensagem que será enviada:</Label>
+              <div className="p-3 bg-gray-50 rounded border text-sm whitespace-pre-wrap">
+                {scheduleMessage || 'Nenhuma mensagem definida'}
+              </div>
+            </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsTestWhatsAppDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSaveMessage}>
-                Salvar
+              <Button 
+                onClick={handleTestWhatsApp}
+                disabled={isTestingSend || !testWhatsAppData.ddd || !testWhatsAppData.phone}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isTestingSend ? 'Enviando...' : 'Enviar Teste'}
               </Button>
             </div>
           </div>
