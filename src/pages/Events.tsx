@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,7 @@ interface Category {
   name: string;
 }
 export default function Events() {
+  console.log('Events component loaded');
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
@@ -95,6 +96,8 @@ export default function Events() {
   const {
     toast
   } = useToast();
+  
+  console.log('Component state declared');
   const [eventForm, setEventForm] = useState({
     name: '',
     start_vote: '',
@@ -613,7 +616,8 @@ Boa sorte❣️`;
     }
   };
 
-  const handleTestWhatsApp = async () => {
+  const handleTestWhatsApp = useCallback(async () => {
+    console.log('handleTestWhatsApp called with data:', testWhatsAppData, 'event:', selectedEventForParciais);
     if (!testWhatsAppData.ddd || !testWhatsAppData.phone || !selectedEventForParciais) {
       toast({
         title: 'Erro',
@@ -664,7 +668,7 @@ Boa sorte❣️`;
     } finally {
       setIsTestingSend(false);
     }
-  };
+  }, [testWhatsAppData, selectedEventForParciais, scheduleMessage, toast, setIsTestingSend, setIsTestWhatsAppDialogOpen, setTestWhatsAppData]);
 
   const getWeekdayName = (weekday: number) => {
     const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
