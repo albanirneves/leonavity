@@ -71,7 +71,7 @@ export default function Events() {
   const [selectedEventForMessages, setSelectedEventForMessages] = useState<Event | null>(null);
   const [isParciaisDialogOpen, setIsParciaisDialogOpen] = useState(false);
   const [selectedEventForParciais, setSelectedEventForParciais] = useState<Event | null>(null);
-  const [newScheduleWeekday, setNewScheduleWeekday] = useState(1);
+  const [newScheduleWeekday, setNewScheduleWeekday] = useState(0);
   const [newScheduleHour, setNewScheduleHour] = useState('09:00');
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
 
@@ -523,7 +523,7 @@ Boa sorte❣️`;
         ...newSchedule,
         id: data.id
       }]);
-      setNewScheduleWeekday(1);
+      setNewScheduleWeekday(0);
       setNewScheduleHour('09:00');
       toast({
         title: 'Sucesso',
@@ -607,7 +607,7 @@ Boa sorte❣️`;
     }
   };
   const getWeekdayName = (weekday: number) => {
-    const days = ['', 'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     return days[weekday] || '';
   };
 
@@ -1265,13 +1265,13 @@ Boa sorte❣️`;
                       <SelectValue placeholder="Selecionar dia" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Domingo</SelectItem>
-                      <SelectItem value="2">Segunda-feira</SelectItem>
-                      <SelectItem value="3">Terça-feira</SelectItem>
-                      <SelectItem value="4">Quarta-feira</SelectItem>
-                      <SelectItem value="5">Quinta-feira</SelectItem>
-                      <SelectItem value="6">Sexta-feira</SelectItem>
-                      <SelectItem value="7">Sábado</SelectItem>
+                      <SelectItem value="0">Domingo</SelectItem>
+                      <SelectItem value="1">Segunda-feira</SelectItem>
+                      <SelectItem value="2">Terça-feira</SelectItem>
+                      <SelectItem value="3">Quarta-feira</SelectItem>
+                      <SelectItem value="4">Quinta-feira</SelectItem>
+                      <SelectItem value="5">Sexta-feira</SelectItem>
+                      <SelectItem value="6">Sábado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
