@@ -1456,7 +1456,7 @@ Boa sorte❣️`;
                 value={scheduleMessage}
                 onChange={(e) => setScheduleMessage(e.target.value)}
                 placeholder="Digite a mensagem que será enviada neste horário..."
-                rows={4}
+                rows={8}
               />
             </div>
             <div className="flex justify-end gap-2">
