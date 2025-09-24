@@ -1364,12 +1364,21 @@ export default function Events() {
                 </div>
                 <div className="flex-1">
                   <Label htmlFor="hour">Horário</Label>
-                  <Input
-                    id="hour"
-                    type="time"
-                    value={newScheduleHour}
-                    onChange={(e) => setNewScheduleHour(e.target.value)}
-                  />
+                  <Select value={newScheduleHour} onValueChange={setNewScheduleHour}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a hora" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => {
+                        const hour = i.toString().padStart(2, '0');
+                        return (
+                          <SelectItem key={hour} value={`${hour}:00`}>
+                            {hour}:00
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button onClick={handleAddSchedule}>
                   <Plus className="h-4 w-4" />
