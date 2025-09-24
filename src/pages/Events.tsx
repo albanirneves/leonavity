@@ -461,10 +461,20 @@ export default function Events() {
   const handleAddSchedule = async () => {
     if (!selectedEventForParciais) return;
 
+    const defaultMessage = `Olá [CANDIDATA]!
+
+Segue abaixo o resultado parcial para votação da [EVENTO] na [CATEGORIA].
+
+Vamos lá, em breve teremos uma nova parcial e tudo pode mudar.
+
+Não esqueça de intensificar as postagens em suas redes sociais e pedir apoio de familiares e amigos.
+
+Boa sorte❣️`;
+
     const newSchedule = {
       hour: newScheduleHour,
       weekday: newScheduleWeekday,
-      message: ''
+      message: defaultMessage
     };
     
     try {
@@ -522,7 +532,17 @@ export default function Events() {
 
   const openMessageDialog = (item: ScheduleItem) => {
     setSelectedScheduleItem(item);
-    setScheduleMessage(item.message || '');
+    const defaultMessage = `Olá [CANDIDATA]!
+
+Segue abaixo o resultado parcial para votação da [EVENTO] na [CATEGORIA].
+
+Vamos lá, em breve teremos uma nova parcial e tudo pode mudar.
+
+Não esqueça de intensificar as postagens em suas redes sociais e pedir apoio de familiares e amigos.
+
+Boa sorte❣️`;
+    
+    setScheduleMessage(item.message || defaultMessage);
     setIsMessageDialogOpen(true);
   };
 
