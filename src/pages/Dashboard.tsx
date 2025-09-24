@@ -151,26 +151,34 @@ export default function Dashboard() {
       const event = events.find(e => e.id.toString() === selectedEvent);
       if (!event) return;
       
+      // Fazer uma única consulta para todos os votos do evento
+      const { data: allVotes, error } = await supabase
+        .from('votes')
+        .select('votes, payment_status, created_at')
+        .eq('id_event', parseInt(selectedEvent))
+        .gte('created_at', event.start_vote)
+        .lte('created_at', event.end_vote)
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching votes:', error);
+        throw error;
+      }
+      
       const weeks = generateWeeklyRanges(event.start_vote, event.end_vote);
       const history: WeeklyHistory[] = [];
       
+      // Processar dados localmente para cada semana
       for (const week of weeks) {
-        const { data: votes, error } = await supabase
-          .from('votes')
-          .select('votes, payment_status')
-          .eq('id_event', parseInt(selectedEvent))
-          .gte('created_at', week.start.toISOString())
-          .lte('created_at', week.end.toISOString());
+        const weekVotes = allVotes?.filter(vote => {
+          const voteDate = new Date(vote.created_at);
+          return voteDate >= week.start && voteDate <= week.end;
+        }) || [];
         
-        if (error) {
-          console.error('Error fetching weekly votes:', error);
-          continue;
-        }
+        const totalVotes = weekVotes.reduce((sum, vote) => sum + (vote.votes || 0), 0);
         
-        const totalVotes = votes?.reduce((sum, vote) => sum + (vote.votes || 0), 0) || 0;
-        
-        // Calcular faturamento líquido (mesmo cálculo do card de faturamento)
-        const paidVotes = votes?.filter(vote => vote.payment_status === 'approved') || [];
+        // Calcular faturamento líquido
+        const paidVotes = weekVotes.filter(vote => vote.payment_status === 'approved');
         const grossRevenue = paidVotes.reduce((sum, vote) => sum + (vote.votes || 0), 0) * event.vote_value;
         
         // Aplicar taxas baseadas no payment_status (assumindo PIX como padrão)
@@ -185,7 +193,6 @@ export default function Dashboard() {
         });
       }
       
-      //setWeeklyHistory(history.reverse()); // Mostrar semanas mais recentes primeiro
       setWeeklyHistory(history);
     } catch (error) {
       console.error('Error fetching weekly history:', error);
