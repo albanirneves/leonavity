@@ -158,7 +158,6 @@ serve(async (req) => {
       frameColor = "#fddf59",
       id_event,
       id_category,
-      candidates = [],
       bucket = DEFAULT_BUCKET,
     } = await req.json();
 
@@ -167,17 +166,6 @@ serve(async (req) => {
     const photosBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/candidates`;
     const backgroundUrl = `${photosBaseUrl}/assets/background_categories_event_${id_event}.png`;
     const framesUrl = `${photosBaseUrl}/assets/layout_categories.png`;
-
-    if (!Array.isArray(candidates) || candidates.length < 1 || candidates.length > 9) {
-      return Response.json({ error: "Provide 1 to 9 candidates in 'candidates'." }, { status: 400 });
-    }
-
-    // Validate shape: each item must have id_candidate (number) and name (string)
-    for (const c of candidates) {
-      if (typeof c?.id_candidate !== "number" || typeof c?.name !== "string") {
-        return Response.json({ error: "Each candidate must include { id_candidate:number, name:string }" }, { status: 400 });
-      }
-    }
 
     if (!id_event || !id_category) {
       return Response.json(
@@ -188,16 +176,32 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // Buscar candidatas da tabela
+    const { data: candidates, error: candidatesError } = await supabase
+      .from('candidates')
+      .select('id_candidate, name')
+      .eq('id_event', id_event)
+      .eq('id_category', id_category)
+      .order('id_candidate');
+
+    if (candidatesError) {
+      return Response.json({ error: `Error fetching candidates: ${candidatesError.message}` }, { status: 500 });
+    }
+
+    if (!candidates || candidates.length < 1 || candidates.length > 9) {
+      return Response.json({ error: "Found 0 or more than 9 candidates for this event/category." }, { status: 400 });
+    }
+
     const baseForPhotos =
       (typeof photosBaseUrl === "string" && photosBaseUrl.trim().length > 0)
         ? photosBaseUrl.trim().replace(/\/+$/, "")
         : framesUrl.substring(0, framesUrl.lastIndexOf("/")); // diretório do framesUrl
 
-    const candObjs = (candidates as Array<{id_candidate:number; name:string}>).map((c) => {
+    const candObjs = candidates.map((c) => {
       const filename = `event_${id_event}_category_${id_category}_candidate_${c.id_candidate}.jpg`;
       return { name: c.name, photoUrl: `${baseForPhotos}/${filename}` };
     });
-    const cands = candObjs; // names provided by request body
+    const cands = candObjs;
 
     // Load base images
     const [bgImgRaw, framesRaw0] = await Promise.all([
@@ -236,7 +240,7 @@ serve(async (req) => {
     // Name bars + texts
     for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
-      const name = ((parseInt(i) + 1) + "° " + cands[i].name).toUpperCase();
+      const name = ((i + 1) + "° " + cands[i].name).toUpperCase();
 
       // Bar spans photo width (plus slight inset if your overlay asks for it)
       const barX = slot.x + 15;
@@ -268,7 +272,7 @@ serve(async (req) => {
     // Upload to Storage
     const { error: upErr } = await supabase.storage.from(bucket).upload(
       outputPath,
-      new Blob([png], { type: "image/png" }),
+      new Blob([new Uint8Array(png)], { type: "image/png" }),
       { upsert: true, contentType: "image/png" },
     );
     if (upErr) throw upErr;
@@ -281,6 +285,6 @@ serve(async (req) => {
     }); 
   } catch (err) {
     console.error(err);
-    return Response.json({ error: String(err?.message ?? err) }, { status: 500 });
+    return Response.json({ error: String((err as any)?.message ?? err) }, { status: 500 });
   }
 });
