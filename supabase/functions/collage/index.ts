@@ -184,8 +184,20 @@ serve(async (req) => {
       .eq('id_category', id_category)
       .order('id_candidate');
 
+    // Buscar nome da categoria
+    const { data: categoryData, error: categoryError } = await supabase
+      .from('categories')
+      .select('name')
+      .eq('id_event', id_event)
+      .eq('id_category', id_category)
+      .single();
+
     if (candidatesError) {
       return Response.json({ error: `Error fetching candidates: ${candidatesError.message}` }, { status: 500 });
+    }
+
+    if (categoryError) {
+      return Response.json({ error: `Error fetching category: ${categoryError.message}` }, { status: 500 });
     }
 
     if (!candidates || candidates.length < 1) {
@@ -275,16 +287,18 @@ serve(async (req) => {
         canvas.composite(nameImg, textX, textY);
       }
 
+      const categoryName = categoryData?.name || 'Categoria';
       const { img: titleImage } = await fitTextRender(
-        'Categoria',
-        450,
+        categoryName,
+        CANVAS_W - 40, // Maximum width with some padding
         75,
         65,
         '#fddf59',
         true,
         1
       );
-      const textX = 530;
+      // Center the title horizontally
+      const textX = Math.floor((CANVAS_W - titleImage.width) / 2);
       const textY = 5;
       canvas.composite(titleImage, textX, textY);
 
