@@ -64,7 +64,7 @@ export default function Candidates() {
     try {
       toast({ title: 'Atualizando banner', description: 'Gerando colagem...', duration: 2000 });
       const { data, error } = await supabase.functions.invoke('collage', {
-        body: { event_id: eventId, category_id: categoryId },
+        body: { id_event: eventId, id_category: categoryId },
       });
       if (error || (data && data.ok === false)) {
         console.error('Collage error:', error || data?.error);

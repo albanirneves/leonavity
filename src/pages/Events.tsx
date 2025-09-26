@@ -274,7 +274,7 @@ export default function Events() {
   const handleAddCategory = async () => {
     if (!newCategory || !selectedEvent) return;
 
-    // Get next category_id for this event
+    // Get next id_category for this event
     const nextCategoryId = categories.length > 0 ? Math.max(...categories.map(c => c.id_category)) + 1 : 1;
     const {
       error
