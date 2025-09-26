@@ -257,14 +257,9 @@ Deno.serve(async (req) => {
         canvas.composite(titleImg, tx, ty);
       }
 
-      // grid metrics - dynamic layout to reduce empty space
-      const count = page.length;
-      let cols = 3;
-      if (count <= 2) cols = count;         // 1-2 side by side
-      else if (count <= 4) cols = 2;        // 3-4 -> 2 columns
-      else if (count <= 6) cols = 3;        // 5-6 -> 3 columns
-      else cols = Math.ceil(Math.sqrt(count));
-      const rows = Math.ceil(count / cols);
+      // grid metrics - fixed 3x3 layout
+      const cols = 3;
+      const rows = 3;
 
       const availableH = outH - headerH - margin * 2 - gap * (rows - 1);
       const availableW = outW - margin * 2 - gap * (cols - 1);
@@ -280,39 +275,45 @@ if (photoH > imgAreaH) {
   photoW = Math.floor(photoH * ar);
 }
 
-      for (let i = 0; i < page.length; i++) {
-        const cand = page[i];
+      // Render all 9 positions in the 3x3 grid
+      for (let i = 0; i < 9; i++) {
         const r = Math.floor(i / cols);
         const c = i % cols;
         const x = margin + c * (tileW + gap);
         const y = headerH + margin + r * (tileH + gap);
 
-        // storage path of candidate photo
-        const candidatePath = `${prefix}_candidate_${cand.id_candidate}.jpg`;
+        // Check if we have a candidate for this position
+        const cand = page[i];
+        
+        if (cand) {
+          // storage path of candidate photo
+          const candidatePath = `${prefix}_candidate_${cand.id_candidate}.jpg`;
 
-        // download from Storage
-        let img: Image | null = null;
-        const dl = await supabase.storage.from(bucket).download(candidatePath);
-        if (dl.data) {
-          const bytes = new Uint8Array(await dl.data.arrayBuffer());
-          try { img = await Image.decode(bytes); } catch { img = null; }
+          // download from Storage
+          let img: Image | null = null;
+          const dl = await supabase.storage.from(bucket).download(candidatePath);
+          if (dl.data) {
+            const bytes = new Uint8Array(await dl.data.arrayBuffer());
+            try { img = await Image.decode(bytes); } catch { img = null; }
+          }
+
+          let photo: Image;
+          if (img) {
+            photo = await centerCropToAspect(img, 4, 5, photoW, photoH);
+          } else {
+            photo = await placeholder(photoW, photoH, "Sem foto", font, textRGBA);
+          }
+          const photoX = x + Math.floor((tileW - photoW) / 2);
+          canvas.composite(photo, photoX, y);
+
+          // caption: "ID - Name"
+          const caption = `${String(cand.id_candidate).padStart(2, "0")} - ${cand.name ?? ""}`;
+          const textImg = await Image.renderText(font, 30, caption, textRGBA);
+          const tx = x + Math.floor((tileW - textImg.width) / 2);
+          const ty = y + photoH + Math.floor((captionH - textImg.height) / 2);
+          canvas.composite(textImg, tx, ty);
         }
-
-let photo: Image;
-if (img) {
-  photo = await centerCropToAspect(img, 4, 5, photoW, photoH);
-} else {
-  photo = await placeholder(photoW, photoH, "Sem foto", font, textRGBA);
-}
-const photoX = x + Math.floor((tileW - photoW) / 2);
-canvas.composite(photo, photoX, y);
-
-// caption: "ID - Name"
-const caption = `${String(cand.id_candidate).padStart(2, "0")} - ${cand.name ?? ""}`;
-const textImg = await Image.renderText(font, 30, caption, textRGBA);
-const tx = x + Math.floor((tileW - textImg.width) / 2);
-const ty = y + photoH + Math.floor((captionH - textImg.height) / 2);
-canvas.composite(textImg, tx, ty);
+        // If no candidate for this position, leave it blank (empty space)
       }
 
       const jpg = await canvas.encodeJPEG(jpegQuality);
