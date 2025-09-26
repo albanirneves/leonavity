@@ -148,7 +148,7 @@ async function fitTextRender(
   return { img, size: minSize };
 }
 // ---------- HTTP ---------- 
-// Updated: Force deploy with fixed 3x3 grid layout
+// Updated: Force deploy with fixed 3x3 grid layout - v2
 serve(async (req) => {
   try {
     if (req.method !== "POST") {
