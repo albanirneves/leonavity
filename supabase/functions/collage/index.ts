@@ -161,7 +161,7 @@ serve(async (req) => {
       bucket = DEFAULT_BUCKET,
     } = await req.json();
 
-    const outputPath = `event_${id_event}_category_${id_category}_banner.png`;
+    // Multiple banners will be created if needed
 
     const photosBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/candidates`;
     const backgroundUrl = `${photosBaseUrl}/assets/background_categories_event_${id_event}.png`;
@@ -188,8 +188,8 @@ serve(async (req) => {
       return Response.json({ error: `Error fetching candidates: ${candidatesError.message}` }, { status: 500 });
     }
 
-    if (!candidates || candidates.length < 1 || candidates.length > 9) {
-      return Response.json({ error: "Found 0 or more than 9 candidates for this event/category." }, { status: 400 });
+    if (!candidates || candidates.length < 1) {
+      return Response.json({ error: "No candidates found for this event/category." }, { status: 400 });
     }
 
     const baseForPhotos =
@@ -197,92 +197,105 @@ serve(async (req) => {
         ? photosBaseUrl.trim().replace(/\/+$/, "")
         : framesUrl.substring(0, framesUrl.lastIndexOf("/")); // diretório do framesUrl
 
-    const candObjs = candidates.map((c) => {
-      const filename = `event_${id_event}_category_${id_category}_candidate_${c.id_candidate}.jpg`;
-      return { name: c.name, photoUrl: `${baseForPhotos}/${filename}` };
-    });
-    const cands = candObjs;
-
-    // Load base images
-    const [bgImgRaw, framesRaw0] = await Promise.all([
-      loadImage(backgroundUrl),
-      loadImage(framesUrl),
-    ]);
-
-    // Prepare canvas
-    const canvas = new Image(CANVAS_W, CANVAS_H);
-    canvas.fill(0x00000000);
-
-    // Background (cover)
-    const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
-    canvas.composite(bg, 0, 0);
-
-    // Paste photos
-    for (let i = 0; i < cands.length; i++) {
-      const slot = SLOTS[i];
-      const { photoUrl } = cands[i];
-      const photo = await loadImage(photoUrl);
-      //const cropped = cover(photo, PHOTO_W, PHOTO_H);
-      const photoRaw = (photo.width !== PHOTO_W || photo.height !== PHOTO_H)
-        ? photo.resize(PHOTO_W, PHOTO_H)
-        : photo;
-      canvas.composite(photoRaw, slot.x, slot.y);
+    // Dividir candidatas em grupos de no máximo 9
+    const candidateGroups: Array<{name: string, photoUrl: string}[]> = [];
+    for (let i = 0; i < candidates.length; i += 9) {
+      const group = candidates.slice(i, i + 9).map((c) => {
+        const filename = `event_${id_event}_category_${id_category}_candidate_${c.id_candidate}.jpg`;
+        return { name: c.name, photoUrl: `${baseForPhotos}/${filename}` };
+      });
+      candidateGroups.push(group);
     }
 
-    // normaliza dimensões do frame para o tamanho do canvas
-    const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
-      ? framesRaw0.resize(CANVAS_W, CANVAS_H)
-      : framesRaw0;
+    // Criar banners para cada grupo
+    const bannerUrls: string[] = [];
+    
+    for (let groupIndex = 0; groupIndex < candidateGroups.length; groupIndex++) {
+      const cands = candidateGroups[groupIndex];
+      const bannerNumber = groupIndex + 1;
+      const outputPath = `event_${id_event}_category_${id_category}_banner_${bannerNumber}.png`;
 
-    const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
-    canvas.composite(tintedFrames, 0, 0);
+      // Load base images
+      const [bgImgRaw, framesRaw0] = await Promise.all([
+        loadImage(backgroundUrl),
+        loadImage(framesUrl),
+      ]);
 
-    // Name bars + texts
-    for (let i = 0; i < cands.length; i++) {
-      const slot = SLOTS[i];
-      const name = ((i + 1) + "° " + cands[i].name).toUpperCase();
+      // Prepare canvas
+      const canvas = new Image(CANVAS_W, CANVAS_H);
+      canvas.fill(0x00000000);
 
-      // Bar spans photo width (plus slight inset if your overlay asks for it)
-      const barX = slot.x + 15;
-      const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 30;
-      const barW = PHOTO_W;
-      const barH = NAME_BAR_H;
+      // Background (cover)
+      const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
+      canvas.composite(bg, 0, 0);
 
-      //drawRoundedRect(canvas, barX, barY, barW, barH, 10, frameColor);
+      // Paste photos
+      for (let i = 0; i < cands.length; i++) {
+        const slot = SLOTS[i];
+        const { photoUrl } = cands[i];
+        const photo = await loadImage(photoUrl);
+        const photoRaw = (photo.width !== PHOTO_W || photo.height !== PHOTO_H)
+          ? photo.resize(PHOTO_W, PHOTO_H)
+          : photo;
+        canvas.composite(photoRaw, slot.x, slot.y);
+      }
 
-      // Fit text
-      const padding = 18;
-      const { img: nameImg } = await fitTextRender(
-        name,
-        barW - padding * 2,
-        20,
-        16,
-        '#5F19DD',
-        true,
-        1
+      // normaliza dimensões do frame para o tamanho do canvas
+      const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
+        ? framesRaw0.resize(CANVAS_W, CANVAS_H)
+        : framesRaw0;
+
+      const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
+      canvas.composite(tintedFrames, 0, 0);
+
+      // Name bars + texts
+      for (let i = 0; i < cands.length; i++) {
+        const slot = SLOTS[i];
+        const name = ((i + 1) + "° " + cands[i].name).toUpperCase();
+
+        // Bar spans photo width (plus slight inset if your overlay asks for it)
+        const barX = slot.x + 15;
+        const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 30;
+        const barW = PHOTO_W;
+        const barH = NAME_BAR_H;
+
+        // Fit text
+        const padding = 18;
+        const { img: nameImg } = await fitTextRender(
+          name,
+          barW - padding * 2,
+          20,
+          16,
+          '#5F19DD',
+          true,
+          1
+        );
+        const textX = barX + padding;
+        const textY = barY + Math.floor((barH - nameImg.height) / 2);
+        canvas.composite(nameImg, textX, textY);
+      }
+
+      // Encode PNG
+      const png = await canvas.encode();
+
+      // Upload to Storage
+      const { error: upErr } = await supabase.storage.from(bucket).upload(
+        outputPath,
+        new Blob([new Uint8Array(png)], { type: "image/png" }),
+        { upsert: true, contentType: "image/png" },
       );
-      const textX = barX + padding;
-      const textY = barY + Math.floor((barH - nameImg.height) / 2);
-      canvas.composite(nameImg, textX, textY);
+      if (upErr) throw upErr;
+
+      // Get public URL
+      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(outputPath);
+      bannerUrls.push(pub.publicUrl);
     }
-
-    // Encode PNG
-    const png = await canvas.encode();
-
-    // Upload to Storage
-    const { error: upErr } = await supabase.storage.from(bucket).upload(
-      outputPath,
-      new Blob([new Uint8Array(png)], { type: "image/png" }),
-      { upsert: true, contentType: "image/png" },
-    );
-    if (upErr) throw upErr;
-
-    // Get public URL
-    const { data: pub } = supabase.storage.from(bucket).getPublicUrl(outputPath);
 
     return Response.json({
-      publicUrl: pub.publicUrl
-    }); 
+      banners: bannerUrls,
+      totalBanners: candidateGroups.length,
+      totalCandidates: candidates.length
+    });
   } catch (err) {
     console.error(err);
     return Response.json({ error: String((err as any)?.message ?? err) }, { status: 500 });
