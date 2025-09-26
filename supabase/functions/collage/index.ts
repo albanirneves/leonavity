@@ -9,8 +9,8 @@ const SUPABASE_KEY =
 const DEFAULT_BUCKET = "candidates";
 
 // ---------- CANVAS / LAYOUT ----------
-const CANVAS_W = 768;
-const CANVAS_H = 768;
+const CANVAS_W = 1365;
+const CANVAS_H = 1365;
 
 const PHOTO_W = 221;
 const PHOTO_H = 295;
