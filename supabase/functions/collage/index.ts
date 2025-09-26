@@ -262,7 +262,8 @@ serve(async (req) => {
       // Name bars + texts
       for (let i = 0; i < cands.length; i++) {
         const slot = SLOTS[i];
-        const name = ((i + 1) + " " + cands[i].name).toUpperCase();
+        const globalCandidateNumber = (groupIndex * 9) + i + 1;
+        const name = (globalCandidateNumber + " " + cands[i].name).toUpperCase();
 
         // Bar spans photo width (plus slight inset if your overlay asks for it)
         const barX = slot.x + 7;
