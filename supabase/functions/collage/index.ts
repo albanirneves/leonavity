@@ -246,9 +246,8 @@ serve(async (req) => {
         const slot = SLOTS[i];
         const { photoUrl } = cands[i];
         const photo = await loadImage(photoUrl);
-        const photoRaw = (photo.width !== PHOTO_W || photo.height !== PHOTO_H)
-          ? photo.resize(PHOTO_W, PHOTO_H)
-          : photo;
+        // Use cover function to maintain aspect ratio and avoid distortion
+        const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
         canvas.composite(photoRaw, slot.x, slot.y);
       }
 
