@@ -147,8 +147,7 @@ async function fitTextRender(
   if (bold) img = embolden(img, boldStrength);
   return { img, size: minSize };
 }
-// ---------- HTTP ---------- 
-// Updated: Force deploy with fixed 3x3 grid layout - v2
+// ---------- HTTP ----------
 serve(async (req) => {
   try {
     if (req.method !== "POST") {
@@ -237,7 +236,7 @@ serve(async (req) => {
     // Name bars + texts
     for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
-      const name = ((parseInt(i.toString()) + 1) + "° " + cands[i].name).toUpperCase();
+      const name = ((parseInt(i) + 1) + "° " + cands[i].name).toUpperCase();
 
       // Bar spans photo width (plus slight inset if your overlay asks for it)
       const barX = slot.x + 15;
@@ -269,7 +268,7 @@ serve(async (req) => {
     // Upload to Storage
     const { error: upErr } = await supabase.storage.from(bucket).upload(
       outputPath,
-      new Blob([new Uint8Array(png)], { type: "image/png" }),
+      new Blob([png], { type: "image/png" }),
       { upsert: true, contentType: "image/png" },
     );
     if (upErr) throw upErr;
@@ -282,6 +281,6 @@ serve(async (req) => {
     }); 
   } catch (err) {
     console.error(err);
-    return Response.json({ error: String((err as Error)?.message ?? err) }, { status: 500 });
+    return Response.json({ error: String(err?.message ?? err) }, { status: 500 });
   }
 });
