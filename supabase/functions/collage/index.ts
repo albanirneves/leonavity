@@ -12,21 +12,21 @@ const DEFAULT_BUCKET = "candidates";
 const CANVAS_W = 1365;
 const CANVAS_H = 1365;
 
-const PHOTO_W = 221;
-const PHOTO_H = 295;
+const PHOTO_W = 226;
+const PHOTO_H = 303;
 const NAME_BAR_H = 58;
 
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
-  { x: 128,  y: 176 },
-  { x: 444, y: 176 },
-  { x: 744, y: 176 },
-  { x: 128,  y: 587 },
-  { x: 444, y: 587 },
-  { x: 744, y: 587 },
-  { x: 128,  y: 995 },
-  { x: 444, y: 995 },
-  { x: 744, y: 995 },
+  { x: 201,  y: 146 },
+  { x: 586, y: 146 },
+  { x: 968, y: 146 },
+  { x: 201,  y: 556 },
+  { x: 586, y: 556 },
+  { x: 968, y: 556 },
+  { x: 201,  y: 961 },
+  { x: 586, y: 961 },
+  { x: 968, y: 961 },
 ] as const;
 
 // ---------- COLOR HELPERS ----------
@@ -251,11 +251,11 @@ serve(async (req) => {
       // Name bars + texts
       for (let i = 0; i < cands.length; i++) {
         const slot = SLOTS[i];
-        const name = ((i + 1) + "° " + cands[i].name).toUpperCase();
+        const name = ((i + 1) + " " + cands[i].name).toUpperCase();
 
         // Bar spans photo width (plus slight inset if your overlay asks for it)
-        const barX = slot.x + 15;
-        const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 30;
+        const barX = slot.x + 7;
+        const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 17;
         const barW = PHOTO_W;
         const barH = NAME_BAR_H;
 
@@ -274,6 +274,19 @@ serve(async (req) => {
         const textY = barY + Math.floor((barH - nameImg.height) / 2);
         canvas.composite(nameImg, textX, textY);
       }
+
+      const { img: titleImage } = await fitTextRender(
+        'Categoria',
+        450,
+        75,
+        65,
+        '#fddf59',
+        true,
+        1
+      );
+      const textX = 530;
+      const textY = 5;
+      canvas.composite(titleImage, textX, textY);
 
       // Encode PNG
       const png = await canvas.encode();
