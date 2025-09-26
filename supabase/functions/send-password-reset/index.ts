@@ -1,9 +1,10 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// Alternative to Resend - use fetch directly to send emails
+const RESEND_API_URL = "https://api.resend.com/emails";
+
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const supabaseUrl = "https://waslpdqekbwxptwgpjze.supabase.co";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -98,56 +99,70 @@ const handler = async (req: Request): Promise<Response> => {
       console.warn('Failed to adjust redirect_to, using original action link', e);
     }
 
-    // Send email with Resend
-    const emailResponse = await resend.emails.send({
-      from: "Votação Online via WhatsApp <noreply@zappet.com.br>",
-      to: [email],
-      subject: "Recuperação de Senha - Votação Online via WhatsApp",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Recuperação de Senha</h1>
-            <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Votação Online via WhatsApp</p>
-          </div>
-          
-          <div style="padding: 30px 20px; background: #f8f9fa;">
-            <h2 style="color: #333; margin-bottom: 20px;">Redefinir sua senha</h2>
-            
-            <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
-              Você solicitou a redefinição de sua senha. Clique no botão abaixo para criar uma nova senha:
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${actionLink ?? resetData.properties?.action_link}" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        color: white; 
-                        text-decoration: none; 
-                        padding: 15px 30px; 
-                        border-radius: 8px; 
-                        display: inline-block; 
-                        font-weight: bold;
-                        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-                Redefinir Senha
-              </a>
+    // Send email with Resend API
+    const emailResponse = await fetch(RESEND_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Votação Online via WhatsApp <noreply@zappet.com.br>",
+        to: [email],
+        subject: "Recuperação de Senha - Votação Online via WhatsApp",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0;">Recuperação de Senha</h1>
+              <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Votação Online via WhatsApp</p>
             </div>
             
-            <p style="color: #666; font-size: 14px; line-height: 1.5; margin-top: 25px;">
-              Se você não solicitou esta redefinição, pode ignorar este email. Sua senha não será alterada.
-            </p>
+            <div style="padding: 30px 20px; background: #f8f9fa;">
+              <h2 style="color: #333; margin-bottom: 20px;">Redefinir sua senha</h2>
+              
+              <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+                Você solicitou a redefinição de sua senha. Clique no botão abaixo para criar uma nova senha:
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${actionLink ?? resetData.properties?.action_link}" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                          color: white; 
+                          text-decoration: none; 
+                          padding: 15px 30px; 
+                          border-radius: 8px; 
+                          display: inline-block; 
+                          font-weight: bold;
+                          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                  Redefinir Senha
+                </a>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; line-height: 1.5; margin-top: 25px;">
+                Se você não solicitou esta redefinição, pode ignorar este email. Sua senha não será alterada.
+              </p>
+              
+              <p style="color: #666; font-size: 14px; line-height: 1.5;">
+                Este link expira em 1 hora por motivos de segurança.
+              </p>
+            </div>
             
-            <p style="color: #666; font-size: 14px; line-height: 1.5;">
-              Este link expira em 1 hora por motivos de segurança.
-            </p>
+            <div style="background: #e9ecef; padding: 20px; text-align: center; font-size: 12px; color: #666;">
+              <p style="margin: 0;">© 2025 Votação Online via WhatsApp - Sistema de Gerenciamento</p>
+            </div>
           </div>
-          
-          <div style="background: #e9ecef; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-            <p style="margin: 0;">© 2025 Votação Online via WhatsApp - Sistema de Gerenciamento</p>
-          </div>
-        </div>
-      `,
+        `,
+      }),
     });
 
-    console.log("Password reset email sent successfully:", emailResponse);
+    if (!emailResponse.ok) {
+      const error = await emailResponse.text();
+      console.error("Error sending email:", error);
+      throw new Error("Failed to send email");
+    }
+
+    const emailResult = await emailResponse.json();
+    console.log("Password reset email sent successfully:", emailResult);
 
     return new Response(
       JSON.stringify({ 
