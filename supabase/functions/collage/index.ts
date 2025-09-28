@@ -11,7 +11,7 @@ const DEFAULT_BUCKET = "candidates";
 // ---------- CANVAS / LAYOUT ----------
 const CANVAS_W = 1365;
 const CANVAS_H = 1365;
-
+let test = []
 const PHOTO_W = 226;
 const PHOTO_H = 303;
 const NAME_BAR_H = 58;
@@ -241,16 +241,6 @@ serve(async (req) => {
       const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
       canvas.composite(bg, 0, 0);
 
-      // Paste photos
-      for (let i = 0; i < cands.length; i++) {
-        const slot = SLOTS[i];
-        const { photoUrl } = cands[i];
-        const photo = await loadImage(photoUrl);
-        // Use cover function to maintain aspect ratio and avoid distortion
-        const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
-        canvas.composite(photoRaw, slot.x, slot.y);
-      }
-
       // normaliza dimensões do frame para o tamanho do canvas
       const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
         ? framesRaw0.resize(CANVAS_W, CANVAS_H)
@@ -262,15 +252,24 @@ serve(async (req) => {
       // Create a mask to show frames only where there are candidates
       const maskedFrames = new Image(CANVAS_W, CANVAS_H);
       maskedFrames.fill(0x00000000); // Transparent background
-      
-      // Apply frame only for candidate positions
+
+      // Paste photos
       for (let i = 0; i < cands.length; i++) {
         const slot = SLOTS[i];
-        // Extract the frame area for this slot
-        const frameArea = tintedFrames.crop(slot.x, slot.y, PHOTO_W, PHOTO_H + NAME_BAR_H);
-        maskedFrames.composite(frameArea, slot.x, slot.y);
+        const { photoUrl } = cands[i];
+        const photo = await loadImage(photoUrl);
+        // Use cover function to maintain aspect ratio and avoid distortion
+        test.push(photo);
+        if(photo) {
+          const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
+          canvas.composite(photoRaw, slot.x, slot.y);
+        } else {
+          // Extract the frame area for this slot
+          const frameArea = tintedFrames.crop(slot.x, slot.y, PHOTO_W, PHOTO_H + NAME_BAR_H);
+          maskedFrames.composite(frameArea, slot.x, slot.y);
+        }
       }
-      
+
       canvas.composite(maskedFrames, 0, 0);
 
       // Name bars + texts
