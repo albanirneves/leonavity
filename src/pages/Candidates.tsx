@@ -508,11 +508,14 @@ export default function Candidates() {
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao excluir candidata', variant: 'destructive' });
     } else {
-      // Regenerate banner after deleting candidate
-      await regenerateBanner(candidateToDelete.id_event, candidateToDelete.id_category);
-      
+      // 1. Show success toast immediately
       toast({ title: 'Sucesso', description: 'Candidata excluída com sucesso' });
-      fetchCandidates();
+      
+      // 2. Remove from local state (update UI immediately)
+      setCandidates(candidates.filter(c => c.id !== candidateToDelete.id));
+      
+      // 3. Finally, regenerate banner in background
+      await regenerateBanner(candidateToDelete.id_event, candidateToDelete.id_category);
     }
     
     setIsDeleteDialogOpen(false);
