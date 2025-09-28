@@ -1,7 +1,13 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.2";
-// Deploy trigger
+
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 // ---------- ENV ----------
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_KEY =
@@ -186,9 +192,14 @@ async function fitTextRender(
 }
 // ---------- HTTP ----------
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     if (req.method !== "POST") {
-      return new Response("Use POST", { status: 405 });
+      return new Response("Use POST", { status: 405, headers: corsHeaders });
     }
 
     const {
@@ -207,7 +218,7 @@ serve(async (req) => {
     if (!id_event || !id_category) {
       return Response.json(
         { error: "Missing id_event or id_category" },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -230,15 +241,15 @@ serve(async (req) => {
       .single();
 
     if (candidatesError) {
-      return Response.json({ error: `Error fetching candidates: ${candidatesError.message}` }, { status: 500 });
+      return Response.json({ error: `Error fetching candidates: ${candidatesError.message}` }, { status: 500, headers: corsHeaders });
     }
 
     if (categoryError) {
-      return Response.json({ error: `Error fetching category: ${categoryError.message}` }, { status: 500 });
+      return Response.json({ error: `Error fetching category: ${categoryError.message}` }, { status: 500, headers: corsHeaders });
     }
 
     if (!candidates || candidates.length < 1) {
-      return Response.json({ error: "No candidates found for this event/category." }, { status: 400 });
+      return Response.json({ error: "No candidates found for this event/category." }, { status: 400, headers: corsHeaders });
     }
 
     const baseForPhotos =
@@ -360,9 +371,9 @@ serve(async (req) => {
       banners: bannerUrls,
       totalBanners: candidateGroups.length,
       totalCandidates: candidates.length
-    });
+    }, { headers: corsHeaders });
   } catch (err) {
     console.error(err);
-    return Response.json({ error: String((err as any)?.message ?? err) }, { status: 500 });
+    return Response.json({ error: String((err as any)?.message ?? err) }, { status: 500, headers: corsHeaders });
   }
 });
