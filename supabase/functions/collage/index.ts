@@ -256,8 +256,22 @@ serve(async (req) => {
         ? framesRaw0.resize(CANVAS_W, CANVAS_H)
         : framesRaw0;
 
+      // Apply frame only to positions with candidates
       const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
-      canvas.composite(tintedFrames, 0, 0);
+      
+      // Create a mask to show frames only where there are candidates
+      const maskedFrames = new Image(CANVAS_W, CANVAS_H);
+      maskedFrames.fill(0x00000000); // Transparent background
+      
+      // Apply frame only for candidate positions
+      for (let i = 0; i < cands.length; i++) {
+        const slot = SLOTS[i];
+        // Extract the frame area for this slot
+        const frameArea = tintedFrames.crop(slot.x, slot.y, PHOTO_W, PHOTO_H + NAME_BAR_H);
+        maskedFrames.composite(frameArea, slot.x, slot.y);
+      }
+      
+      canvas.composite(maskedFrames, 0, 0);
 
       // Name bars + texts
       for (let i = 0; i < cands.length; i++) {
