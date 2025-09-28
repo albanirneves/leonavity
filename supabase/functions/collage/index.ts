@@ -11,7 +11,7 @@ const DEFAULT_BUCKET = "candidates";
 // ---------- CANVAS / LAYOUT ----------
 const CANVAS_W = 1365;
 const CANVAS_H = 1365;
-let test = []
+
 const PHOTO_W = 226;
 const PHOTO_H = 303;
 const NAME_BAR_H = 58;
@@ -241,33 +241,23 @@ serve(async (req) => {
       const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
       canvas.composite(bg, 0, 0);
 
+      // Paste photos
+      for (let i = 0; i < cands.length; i++) {
+        const slot = SLOTS[i];
+        const { photoUrl } = cands[i];
+        const photo = await loadImage(photoUrl);
+        // Use cover function to maintain aspect ratio and avoid distortion
+        const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
+        canvas.composite(photoRaw, slot.x, slot.y);
+      }
+
       // normaliza dimensões do frame para o tamanho do canvas
       const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
         ? framesRaw0.resize(CANVAS_W, CANVAS_H)
         : framesRaw0;
 
-      // Apply frame only to positions with candidates
       const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
-
-      // Paste photos
-      for (let i = 0; i < cands.length; i++) {
-        const slot = SLOTS[i];
-        const { photoUrl } = cands[i];
-        
-        try {
-          const photo = await loadImage(photoUrl);
-          // Use cover function to maintain aspect ratio and avoid distortion
-          const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
-          canvas.composite(photoRaw, slot.x, slot.y);
-          
-          // Apply frame for this specific position
-          const frameArea = tintedFrames.crop(slot.x, slot.y, PHOTO_W, PHOTO_H + NAME_BAR_H);
-          canvas.composite(frameArea, slot.x, slot.y);
-        } catch (error) {
-          // Se não conseguir carregar a foto, não aplica nada (deixa transparente)
-          console.log(`Failed to load photo for candidate ${i + 1}: ${error}`);
-        }
-      }
+      canvas.composite(tintedFrames, 0, 0);
 
       // Name bars + texts
       for (let i = 0; i < cands.length; i++) {
