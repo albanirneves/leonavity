@@ -508,6 +508,9 @@ export default function Candidates() {
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao excluir candidata', variant: 'destructive' });
     } else {
+      // Regenerate banner after deleting candidate
+      await regenerateBanner(candidateToDelete.id_event, candidateToDelete.id_category);
+      
       toast({ title: 'Sucesso', description: 'Candidata excluída com sucesso' });
       fetchCandidates();
     }
