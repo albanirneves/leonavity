@@ -63,6 +63,43 @@ function recolorNonTransparent(img: Image, hex: string): Image {
   return out;
 }
 
+// --- Frame masking helpers for last-page empty slots ---
+const FRAME_PAD_X = 24;      // horizontal pad of yellow frame beyond photo
+const FRAME_PAD_TOP = 24;    // top pad beyond photo
+const FRAME_PAD_BOTTOM = 24; // extra bottom pad (besides NAME_BAR_H)
+
+function frameRectForSlot(idx: number) {
+  const s = SLOTS[idx];
+  return {
+    x: s.x - FRAME_PAD_X,
+    y: s.y - FRAME_PAD_TOP,
+    w: PHOTO_W + FRAME_PAD_X * 2,
+    h: PHOTO_H + FRAME_PAD_TOP + FRAME_PAD_BOTTOM + NAME_BAR_H,
+  };
+}
+
+function clearRect(img: Image, x: number, y: number, w: number, h: number) {
+  const x0 = Math.max(0, Math.floor(x));
+  const y0 = Math.max(0, Math.floor(y));
+  const x1 = Math.min(img.width, Math.ceil(x + w));
+  const y1 = Math.min(img.height, Math.ceil(y + h));
+  for (let yy = y0; yy < y1; yy++) {
+    for (let xx = x0; xx < x1; xx++) {
+      img.setPixelAt(xx, yy, 0x00000000); // fully transparent pixel
+    }
+  }
+}
+
+function punchOutEmptyFrameSlots(baseFrames: Image, usedCount: number): Image {
+  if (usedCount >= 9) return baseFrames;
+  const copy = baseFrames.clone();
+  for (let i = usedCount; i < 9; i++) {
+    const r = frameRectForSlot(i);
+    clearRect(copy, r.x, r.y, r.w, r.h);
+  }
+  return copy;
+}
+
 // Local TTF in Supabase Storage (public)
 const FONT_URL = SUPABASE_URL + "/storage/v1/object/public/candidates/assets/OpenSans-SemiBold.ttf";
 let FONT_CACHE: Uint8Array | null = null;
@@ -257,7 +294,8 @@ serve(async (req) => {
         : framesRaw0;
 
       const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
-      canvas.composite(tintedFrames, 0, 0);
+      const framesOverlay = punchOutEmptyFrameSlots(tintedFrames, cands.length);
+      canvas.composite(framesOverlay, 0, 0);
 
       // Name bars + texts
       for (let i = 0; i < cands.length; i++) {
