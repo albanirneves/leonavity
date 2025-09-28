@@ -500,6 +500,38 @@ export default function Candidates() {
   const confirmDeleteCandidate = async () => {
     if (!candidateToDelete) return;
 
+    // First, check if candidate has approved votes
+    const { data: votesData, error: votesError } = await supabase
+      .from('votes')
+      .select('id')
+      .eq('id_event', candidateToDelete.id_event)
+      .eq('id_category', candidateToDelete.id_category)
+      .eq('id_candidate', candidateToDelete.id_candidate)
+      .eq('payment_status', 'approved')
+      .limit(1);
+
+    if (votesError) {
+      toast({ 
+        title: 'Erro', 
+        description: 'Erro ao verificar votos da candidata', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    // If candidate has approved votes, prevent deletion
+    if (votesData && votesData.length > 0) {
+      toast({ 
+        title: 'Não é possível excluir', 
+        description: 'Esta candidata possui votos aprovados e não pode ser excluída.', 
+        variant: 'destructive' 
+      });
+      setIsDeleteDialogOpen(false);
+      setCandidateToDelete(null);
+      return;
+    }
+
+    // Proceed with deletion if no approved votes
     const { error } = await supabase
       .from('candidates')
       .delete()
