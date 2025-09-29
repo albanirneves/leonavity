@@ -297,30 +297,34 @@ serve(async (req) => {
       const framesOverlay = punchOutEmptyFrameSlots(tintedFrames, cands.length);
       canvas.composite(framesOverlay, 0, 0);
 
-      // Name bars + texts
+      // Name bars + centered texts
       for (let i = 0; i < cands.length; i++) {
         const slot = SLOTS[i];
         const globalCandidateNumber = (groupIndex * 9) + i + 1;
-        const name = (globalCandidateNumber + " " + cands[i].name).toUpperCase();
+        const name = (globalCandidateNumber + " - " + cands[i].name).toUpperCase();
 
-        // Bar spans photo width (plus slight inset if your overlay asks for it)
-        const barX = slot.x + 7;
+        // Bar spans photo width (with a small visual inset from the overlay)
+        const barInsetX = 7;
+        const barX = slot.x + barInsetX;
         const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 17;
         const barW = PHOTO_W;
         const barH = NAME_BAR_H;
 
-        // Fit text
-        const padding = 18;
+        // Fit text within the bar width, leaving side padding so long names don't touch edges
+        const sidePadding = 18;
+        const maxTextW = barW - sidePadding * 2;
         const { img: nameImg } = await fitTextRender(
           name,
-          barW - padding * 2,
+          maxTextW,
           20,
           16,
           '#5F19DD',
           true,
           1
         );
-        const textX = barX + padding;
+        // HORIZONTAL CENTER: center text image inside the bar width
+        const textX = barX + Math.floor((barW - nameImg.width) / 2);
+        // Keep vertical alignment centered inside the yellow bar
         const textY = barY + Math.floor((barH - nameImg.height) / 2);
         canvas.composite(nameImg, textX, textY);
       }
