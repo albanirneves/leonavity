@@ -1120,6 +1120,18 @@ export default function Candidates() {
                     <Label>Total de Votos</Label>
                     <p className="font-medium text-lg text-primary">{selectedCandidate.votes_count}</p>
                   </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsEditMode(true);
+                      setIsPhoneModalOpen(true);
+                    }}
+                    disabled={uploading}
+                    className="w-full"
+                  >
+                    Cadastrar Telefones
+                  </Button>
                 </div>
                 
                 <div className="space-y-4">
@@ -1157,36 +1169,24 @@ export default function Candidates() {
                 </div>
               </div>
               
-              <div className="flex justify-between gap-2 mt-6">
+              <div className="flex justify-end gap-2 mt-6">
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    setIsEditMode(true);
-                    setIsPhoneModalOpen(true);
+                    setIsModalOpen(false);
+                    setSelectedPhoto(null);
+                    setPhotoPreview(null);
                   }}
                   disabled={uploading}
                 >
-                  Cadastrar Telefones
+                  Cancelar
                 </Button>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsModalOpen(false);
-                      setSelectedPhoto(null);
-                      setPhotoPreview(null);
-                    }}
-                    disabled={uploading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={handleEditCandidate}
-                    disabled={uploading}
-                  >
-                    {uploading ? 'Salvando...' : 'Salvar Alterações'}
-                  </Button>
-                </div>
+                <Button 
+                  onClick={handleEditCandidate}
+                  disabled={uploading}
+                >
+                  {uploading ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
               </div>
             </>
           )}
