@@ -768,6 +768,46 @@ Boa sorte❣️`;
       img.src = URL.createObjectURL(file);
     });
   };
+
+  const resizeImageToSquareFormat = (file: File): Promise<File> => {
+    return new Promise(resolve => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      img.onload = () => {
+        // Square format: 1:1 aspect ratio
+        const targetSize = 1080;
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+
+        // Calculate scaling to cover the entire canvas
+        const scale = targetSize / Math.max(img.width, img.height);
+        const scaledWidth = img.width * scale;
+        const scaledHeight = img.height * scale;
+
+        // Center the image
+        const x = (targetSize - scaledWidth) / 2;
+        const y = (targetSize - scaledHeight) / 2;
+
+        // Fill background with white
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, targetSize, targetSize);
+
+        // Draw the image
+        ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+        canvas.toBlob(blob => {
+          if (blob) {
+            const resizedFile = new File([blob], file.name, {
+              type: 'image/png',
+              lastModified: Date.now()
+            });
+            resolve(resizedFile);
+          }
+        }, 'image/png', 0.9);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedEventForParciais) return;
@@ -859,8 +899,8 @@ Boa sorte❣️`;
     }
     setIsUploadingImageCategories(true);
     try {
-      // Resize image to story format (9:16)
-      const resizedFile = await resizeImageToStoryFormat(file);
+      // Resize image to square format (1:1)
+      const resizedFile = await resizeImageToSquareFormat(file);
       const imagePath = `assets/background_categories_event_${selectedEventForParciais.id}.png`;
 
       // Upload to Supabase Storage
@@ -1378,7 +1418,7 @@ Boa sorte❣️`;
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-base font-medium">Background Categorias</Label>
-                  <div className="text-sm text-muted-foreground">9:16</div>
+                  <div className="text-sm text-muted-foreground">1:1</div>
                 </div>
                 
                 <div className="flex flex-col gap-4">
@@ -1400,7 +1440,7 @@ Boa sorte❣️`;
                     </div>}
                   
                   {/* Image Preview */}
-                  {backgroundImageCategoriesUrl && <div className="w-20 h-36 border rounded-lg overflow-hidden bg-gray-100 mx-auto">
+                  {backgroundImageCategoriesUrl && <div className="w-20 h-20 border rounded-lg overflow-hidden bg-gray-100 mx-auto">
                       <img src={backgroundImageCategoriesUrl} alt="Background Categorias" className="w-full h-full object-cover" />
                     </div>}
                 </div>
