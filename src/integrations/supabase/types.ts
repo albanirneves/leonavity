@@ -21,6 +21,7 @@ export type Database = {
           id: number
           marketplace: string
           name: string
+          whatsapp_host: string | null
           whatsapp_number: string | null
           whatsapp_token: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           id?: number
           marketplace: string
           name: string
+          whatsapp_host?: string | null
           whatsapp_number?: string | null
           whatsapp_token: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           id?: number
           marketplace?: string
           name?: string
+          whatsapp_host?: string | null
           whatsapp_number?: string | null
           whatsapp_token?: string
         }
