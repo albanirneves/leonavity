@@ -11,6 +11,3 @@ verify_jwt = false
 
 [functions.send_whatsapp]
 verify_jwt = true
-
-[functions.rename-storage-files]
-verify_jwt = false

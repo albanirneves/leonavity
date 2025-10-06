@@ -11,8 +11,7 @@ import {
   WifiOff,
   CheckCircle,
   XCircle,
-  Info,
-  FolderSync
+  Info
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +22,6 @@ export default function Settings() {
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [supabaseUrl] = useState(import.meta.env.VITE_SUPABASE_URL || 'https://waslpdqekbwxptwgpjze.supabase.co');
   const [supabaseKey] = useState(import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJ...');
-  const [renamingFiles, setRenamingFiles] = useState(false);
   const { toast } = useToast();
 
   const testConnection = async () => {
@@ -53,39 +51,6 @@ export default function Settings() {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleRenameStorageFiles = async () => {
-    try {
-      setRenamingFiles(true);
-      
-      toast({
-        title: "Renomeando arquivos",
-        description: "Processando renomeação dos arquivos no storage...",
-      });
-
-      const { data, error } = await supabase.functions.invoke('rename-storage-files', {
-        body: {}
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso!",
-        description: `${data.renamed} arquivos renomeados com sucesso.`,
-      });
-
-      console.log('Rename result:', data);
-    } catch (error: any) {
-      console.error('Error renaming files:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao renomear",
-        description: error?.message || 'Não foi possível renomear os arquivos.',
-      });
-    } finally {
-      setRenamingFiles(false);
     }
   };
 
@@ -298,53 +263,6 @@ export default function Settings() {
                 </div>
               </div>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Storage Utilities */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderSync className="h-5 w-5" />
-            Utilitários de Storage
-          </CardTitle>
-          <CardDescription>
-            Ferramentas para gerenciamento de arquivos no storage
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertTitle>Renomear Arquivos do Storage</AlertTitle>
-              <AlertDescription>
-                Esta ferramenta renomeia automaticamente todos os arquivos no bucket de candidatas:
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>event_4 → event_1</li>
-                  <li>event_5 → event_2</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
-
-            <CustomButton
-              variant="outline"
-              onClick={handleRenameStorageFiles}
-              disabled={renamingFiles}
-              className="w-full"
-            >
-              {renamingFiles ? (
-                <>
-                  <LoadingSpinner size="sm" />
-                  Renomeando arquivos...
-                </>
-              ) : (
-                <>
-                  <FolderSync className="h-4 w-4" />
-                  Renomear Arquivos do Storage
-                </>
-              )}
-            </CustomButton>
           </div>
         </CardContent>
       </Card>
