@@ -26,6 +26,8 @@ interface Candidate {
 interface Event {
   id: number;
   name: string;
+  start_vote: string;
+  end_vote: string;
 }
 
 interface Category {
@@ -150,16 +152,25 @@ export default function Candidates() {
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('events')
-      .select('id, name, start_vote')
+      .select('id, name, start_vote, end_vote')
       .order('start_vote', { ascending: true }); // Order by start date
     
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao carregar eventos', variant: 'destructive' });
     } else {
       setEvents(data || []);
-      // Auto-select the first event if none is selected or if "all" was selected
+      // Auto-select the first event that is currently ongoing
       if (data && data.length > 0 && (selectedEvent === 'all' || !selectedEvent)) {
-        setSelectedEvent(data[0].id.toString());
+        const now = new Date();
+        const ongoingEvent = data.find(event => {
+          const startDate = new Date(event.start_vote);
+          const endDate = new Date(event.end_vote);
+          return now >= startDate && now <= endDate;
+        });
+        
+        // Select ongoing event if found, otherwise select the first event
+        const eventToSelect = ongoingEvent || data[0];
+        setSelectedEvent(eventToSelect.id.toString());
       }
     }
   };
