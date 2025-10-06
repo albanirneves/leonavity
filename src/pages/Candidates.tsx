@@ -28,6 +28,7 @@ interface Event {
   name: string;
   start_vote: string;
   end_vote: string;
+  active: boolean;
 }
 
 interface Category {
@@ -152,25 +153,31 @@ export default function Candidates() {
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('events')
-      .select('id, name, start_vote, end_vote')
+      .select('id, name, start_vote, end_vote, active')
       .order('start_vote', { ascending: true }); // Order by start date
     
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao carregar eventos', variant: 'destructive' });
     } else {
       setEvents(data || []);
-      // Auto-select the first event that is currently ongoing
+      // Auto-select the first active event that is currently ongoing
       if (data && data.length > 0 && (selectedEvent === 'all' || !selectedEvent)) {
         const now = new Date();
-        const ongoingEvent = data.find(event => {
-          const startDate = new Date(event.start_vote);
-          const endDate = new Date(event.end_vote);
-          return now >= startDate && now <= endDate;
-        });
+        // Filter only active events
+        const activeEvents = data.filter(event => event.active === true);
         
-        // Select ongoing event if found, otherwise select the first event
-        const eventToSelect = ongoingEvent || data[0];
-        setSelectedEvent(eventToSelect.id.toString());
+        if (activeEvents.length > 0) {
+          // Find the first active event that is currently ongoing
+          const ongoingEvent = activeEvents.find(event => {
+            const startDate = new Date(event.start_vote);
+            const endDate = new Date(event.end_vote);
+            return now >= startDate && now <= endDate;
+          });
+          
+          // Select ongoing event if found, otherwise select the first active event
+          const eventToSelect = ongoingEvent || activeEvents[0];
+          setSelectedEvent(eventToSelect.id.toString());
+        }
       }
     }
   };
