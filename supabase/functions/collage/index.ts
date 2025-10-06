@@ -190,6 +190,42 @@ async function fitTextRender(
   if (bold) img = embolden(img, boldStrength);
   return { img, size: minSize };
 }
+
+// Load and resize photo to reduce memory usage
+async function loadAndResizePhoto(url: string): Promise<Image> {
+  const MAX_HEIGHT = 1024;
+  const MAX_SIZE_KB = 100;
+  
+  // Load original image
+  let img = await loadImage(url);
+  
+  // Resize if height exceeds MAX_HEIGHT
+  if (img.height > MAX_HEIGHT) {
+    const scale = MAX_HEIGHT / img.height;
+    const newWidth = Math.round(img.width * scale);
+    img = img.resize(newWidth, MAX_HEIGHT);
+  }
+  
+  // Try to compress to target size
+  let quality = 90;
+  let encoded = await img.encodeJPEG(quality);
+  
+  // Reduce quality until size is acceptable or quality is too low
+  while (encoded.length > MAX_SIZE_KB * 1024 && quality > 40) {
+    quality -= 10;
+    encoded = await img.encodeJPEG(quality);
+  }
+  
+  // If still too large, resize further
+  if (encoded.length > MAX_SIZE_KB * 1024) {
+    const currentScale = Math.sqrt((MAX_SIZE_KB * 1024) / encoded.length);
+    const newWidth = Math.round(img.width * currentScale * 0.9);
+    const newHeight = Math.round(img.height * currentScale * 0.9);
+    img = img.resize(Math.max(newWidth, 100), Math.max(newHeight, 100));
+  }
+  
+  return img;
+}
 // ---------- HTTP ----------
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -289,11 +325,12 @@ serve(async (req) => {
       const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
       canvas.composite(bg, 0, 0);
 
-      // Paste photos
+      // Paste photos one by one (load and resize individually to save memory)
       for (let i = 0; i < cands.length; i++) {
         const slot = SLOTS[i];
         const { photoUrl } = cands[i];
-        const photo = await loadImage(photoUrl);
+        // Load and resize photo to reduce memory usage
+        const photo = await loadAndResizePhoto(photoUrl);
         // Use cover function to maintain aspect ratio and avoid distortion
         const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
         canvas.composite(photoRaw, slot.x, slot.y);
