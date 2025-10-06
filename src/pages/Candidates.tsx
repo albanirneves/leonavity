@@ -20,12 +20,15 @@ interface Candidate {
   id_category: number;
   id_candidate: number;
   created_at: string;
-  phone?: string;
+  phone?: string[];
 }
 
 interface Event {
   id: number;
   name: string;
+  start_vote: string;
+  end_vote: string;
+  active: boolean;
 }
 
 interface Category {
@@ -57,6 +60,9 @@ export default function Candidates() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<CandidateWithDetails | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [phoneNumbers, setPhoneNumbers] = useState<Array<{ddi: string, ddd: string, number: string}>>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
   const { toast } = useToast();
 
   // Always regenerate collage banner when a candidate photo changes
@@ -86,10 +92,7 @@ export default function Candidates() {
     name: '',
     name_complete: '',
     id_event: '',
-    id_category: '',
-    phone_ddi: '+55',
-    phone_ddd: '',
-    phone_number: ''
+    id_category: ''
   });
 
   const [editCandidateForm, setEditCandidateForm] = useState({
@@ -97,10 +100,7 @@ export default function Candidates() {
     name_complete: '',
     id_event: '',
     id_category: '',
-    id_candidate: '',
-    phone_ddi: '+55',
-    phone_ddd: '',
-    phone_number: ''
+    id_candidate: ''
   });
 
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
@@ -112,11 +112,9 @@ export default function Candidates() {
       name: '',
       name_complete: '',
       id_event: '',
-      id_category: '',
-      phone_ddi: '+55',
-      phone_ddd: '',
-      phone_number: ''
+      id_category: ''
     });
+    setPhoneNumbers([]);
     setSelectedPhoto(null);
     setPhotoPreview(null);
   };
@@ -150,16 +148,31 @@ export default function Candidates() {
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('events')
-      .select('id, name, start_vote')
+      .select('id, name, start_vote, end_vote, active')
       .order('start_vote', { ascending: true }); // Order by start date
     
     if (error) {
       toast({ title: 'Erro', description: 'Erro ao carregar eventos', variant: 'destructive' });
     } else {
       setEvents(data || []);
-      // Auto-select the first event if none is selected or if "all" was selected
+      // Auto-select the first active event that is currently ongoing
       if (data && data.length > 0 && (selectedEvent === 'all' || !selectedEvent)) {
-        setSelectedEvent(data[0].id.toString());
+        const now = new Date();
+        // Filter only active events
+        const activeEvents = data.filter(event => event.active === true);
+        
+        if (activeEvents.length > 0) {
+          // Find the first active event that is currently ongoing
+          const ongoingEvent = activeEvents.find(event => {
+            const startDate = new Date(event.start_vote);
+            const endDate = new Date(event.end_vote);
+            return now >= startDate && now <= endDate;
+          });
+          
+          // Select ongoing event if found, otherwise select the first active event
+          const eventToSelect = ongoingEvent || activeEvents[0];
+          setSelectedEvent(eventToSelect.id.toString());
+        }
       }
     }
   };
@@ -238,7 +251,8 @@ export default function Candidates() {
             event_name: event?.name || 'Evento não encontrado',
             category_name: category?.name || 'Categoria não encontrada',
             votes_count: totalVotes,
-            photo_url: photoData.publicUrl
+            photo_url: photoData.publicUrl,
+            phone: Array.isArray(candidate.phone) ? candidate.phone as string[] : []
           };
         })
       );
@@ -297,18 +311,23 @@ export default function Candidates() {
     };
     
     setSelectedCandidate(candidateWithFreshPhoto);
-    // Parse phone number if it exists
-    let phoneDdi = '+55';
-    let phoneDdd = '';
-    let phoneNumber = '';
     
-    if (candidate.phone) {
-      const phoneMatch = candidate.phone.match(/^\+(\d{2})(\d{2})(\d{8,9})$/);
-      if (phoneMatch) {
-        phoneDdi = `+${phoneMatch[1]}`;
-        phoneDdd = phoneMatch[2];
-        phoneNumber = phoneMatch[3];
-      }
+    // Parse phone numbers array from strings to UI format
+    // Format: "5518996473715" -> DDI: 55 (2 digits), DDD: 18 (2 digits), Number: 996473715 (rest)
+    if (candidate.phone && Array.isArray(candidate.phone)) {
+      const parsedPhones = candidate.phone.map(phoneStr => {
+        // DDI is always first 2 digits, DDD is next 2 digits, rest is number
+        if (phoneStr.length >= 12) {
+          const ddi = phoneStr.substring(0, 2);
+          const ddd = phoneStr.substring(2, 4);
+          const number = phoneStr.substring(4);
+          return { ddi: `+${ddi}`, ddd, number };
+        }
+        return { ddi: '+55', ddd: '', number: phoneStr };
+      });
+      setPhoneNumbers(parsedPhones);
+    } else {
+      setPhoneNumbers([]);
     }
 
     setEditCandidateForm({
@@ -316,10 +335,7 @@ export default function Candidates() {
       name_complete: candidate.name_complete || '',
       id_event: candidate.id_event.toString(),
       id_category: candidate.id_category.toString(),
-      id_candidate: candidate.id_candidate.toString(),
-      phone_ddi: phoneDdi,
-      phone_ddd: phoneDdd,
-      phone_number: phoneNumber
+      id_candidate: candidate.id_candidate.toString()
     });
     
     // Load categories for the selected event
@@ -429,14 +445,15 @@ export default function Candidates() {
         ? existingCandidates[0].id_candidate + 1 
         : 1;
 
-      // Create phone number if provided (numbers only, no + prefix)
-      let fullPhone = null;
-      if (newCandidateForm.phone_ddd && newCandidateForm.phone_number) {
-        const ddi = newCandidateForm.phone_ddi.replace('+', '');
-        fullPhone = `${ddi}${newCandidateForm.phone_ddd}${newCandidateForm.phone_number}`;
-      }
+      // Convert phone numbers from UI format to string array
+      const phoneStrings = phoneNumbers
+        .filter(p => p.ddd && p.number)
+        .map(p => {
+          const ddi = p.ddi.replace('+', '');
+          return `${ddi}${p.ddd}${p.number}`;
+        });
 
-      // First, create the candidate
+      // First, create the candidate with phone numbers as string array
       const { error } = await supabase
         .from('candidates')
         .insert([{
@@ -445,7 +462,7 @@ export default function Candidates() {
           id_event: parseInt(newCandidateForm.id_event),
           id_category: parseInt(newCandidateForm.id_category),
           id_candidate: nextIdCandidate,
-          phone: fullPhone
+          phone: phoneStrings.length > 0 ? phoneStrings as any : []
         }]);
 
       if (error) throw error;
@@ -477,11 +494,9 @@ export default function Candidates() {
         name: '',
         name_complete: '',
         id_event: '',
-        id_category: '',
-        phone_ddi: '+55',
-        phone_ddd: '',
-        phone_number: ''
+        id_category: ''
       });
+      setPhoneNumbers([]);
       setSelectedPhoto(null);
       setPhotoPreview(null);
       fetchCandidates();
@@ -572,13 +587,15 @@ export default function Candidates() {
       
       const bannerShouldRegenerate = nameChanged || idCandidateChanged || idCategoryChanged || photoChanged;
 
-      // Create phone number if provided (numbers only, no + prefix)
-      let fullPhone = null;
-      if (editCandidateForm.phone_ddd && editCandidateForm.phone_number) {
-        const ddi = editCandidateForm.phone_ddi.replace('+', '');
-        fullPhone = `${ddi}${editCandidateForm.phone_ddd}${editCandidateForm.phone_number}`;
-      }
+      // Convert phone numbers from UI format to string array
+      const phoneStrings = phoneNumbers
+        .filter(p => p.ddd && p.number)
+        .map(p => {
+          const ddi = p.ddi.replace('+', '');
+          return `${ddi}${p.ddd}${p.number}`;
+        });
 
+      // Update candidate with phone numbers as string array
       const { error } = await supabase
         .from('candidates')
         .update({
@@ -587,7 +604,7 @@ export default function Candidates() {
           id_event: parseInt(editCandidateForm.id_event),
           id_category: parseInt(editCandidateForm.id_category),
           id_candidate: parseInt(editCandidateForm.id_candidate),
-          phone: fullPhone
+          phone: phoneStrings.length > 0 ? phoneStrings as any : []
         })
         .eq('id', selectedCandidate.id);
 
@@ -667,6 +684,45 @@ export default function Candidates() {
       toast({ title: 'Erro', description: 'Erro ao atualizar candidata', variant: 'destructive' });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleSavePhones = async () => {
+    if (!selectedCandidate && !isAddModalOpen) return;
+
+    try {
+      // Convert phone numbers from UI format to string array
+      const phoneStrings = phoneNumbers
+        .filter(p => p.ddd && p.number)
+        .map(p => {
+          const ddi = p.ddi.replace('+', '');
+          return `${ddi}${p.ddd}${p.number}`;
+        });
+
+      // If editing existing candidate, update in database
+      if (isEditMode && selectedCandidate) {
+        const { error } = await supabase
+          .from('candidates')
+          .update({
+            phone: phoneStrings.length > 0 ? phoneStrings as any : []
+          })
+          .eq('id', selectedCandidate.id);
+
+        if (error) throw error;
+
+        toast({ title: 'Sucesso', description: 'Telefones salvos com sucesso' });
+        
+        // Refresh candidates list
+        await fetchCandidates();
+      }
+      // If creating new candidate, just close modal (phones will be saved when candidate is created)
+      else {
+        toast({ title: 'Telefones configurados', description: 'Serão salvos ao criar a candidata' });
+      }
+
+      setIsPhoneModalOpen(false);
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Erro ao salvar telefones', variant: 'destructive' });
     }
   };
 
@@ -913,48 +969,6 @@ export default function Candidates() {
                   onChange={(e) => setNewCandidateForm({ ...newCandidateForm, name_complete: e.target.value })}
                 />
               </div>
-
-              {/* Phone Fields */}
-              <div>
-                <Label>Telefone</Label>
-                <div className="flex gap-2">
-                  <div className="w-20">
-                    <Select 
-                      value={newCandidateForm.phone_ddi} 
-                      onValueChange={(value) => setNewCandidateForm({ ...newCandidateForm, phone_ddi: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="+55">+55</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="w-16">
-                    <Input
-                      placeholder="DDD"
-                      value={newCandidateForm.phone_ddd}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 2);
-                        setNewCandidateForm({ ...newCandidateForm, phone_ddd: value });
-                      }}
-                      maxLength={2}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Número"
-                      value={newCandidateForm.phone_number}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 9);
-                        setNewCandidateForm({ ...newCandidateForm, phone_number: value });
-                      }}
-                      maxLength={9}
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className="space-y-4">
@@ -1001,21 +1015,32 @@ export default function Candidates() {
             </div>
           </div>
           
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-between gap-2 mt-4">
             <Button 
               variant="outline" 
               onClick={() => {
-                setIsAddModalOpen(false);
-                setSelectedPhoto(null);
-                setPhotoPreview(null);
-                resetAddForm();
+                setIsEditMode(false);
+                setIsPhoneModalOpen(true);
               }}
             >
-              Cancelar
+              Cadastrar Telefones
             </Button>
-            <Button onClick={handleCreateCandidate} disabled={uploading}>
-              {uploading ? 'Criando...' : 'Criar Candidata'}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setSelectedPhoto(null);
+                  setPhotoPreview(null);
+                  resetAddForm();
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleCreateCandidate} disabled={uploading}>
+                {uploading ? 'Criando...' : 'Criar Candidata'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -1091,53 +1116,22 @@ export default function Candidates() {
                     </div>
                   )}
                   
-                  
-                  {/* Phone Fields */}
-                  <div>
-                    <Label>Telefone</Label>
-                    <div className="flex gap-2">
-                      <div className="w-20">
-                        <Select 
-                          value={editCandidateForm.phone_ddi} 
-                          onValueChange={(value) => setEditCandidateForm({ ...editCandidateForm, phone_ddi: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="+55">+55</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="w-16">
-                        <Input
-                          placeholder="DDD"
-                          value={editCandidateForm.phone_ddd}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '').slice(0, 2);
-                            setEditCandidateForm({ ...editCandidateForm, phone_ddd: value });
-                          }}
-                          maxLength={2}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Número"
-                          value={editCandidateForm.phone_number}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '').slice(0, 9);
-                            setEditCandidateForm({ ...editCandidateForm, phone_number: value });
-                          }}
-                          maxLength={9}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
                   <div>
                     <Label>Total de Votos</Label>
                     <p className="font-medium text-lg text-primary">{selectedCandidate.votes_count}</p>
                   </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsEditMode(true);
+                      setIsPhoneModalOpen(true);
+                    }}
+                    disabled={uploading}
+                    className="w-full"
+                  >
+                    Cadastrar Telefones
+                  </Button>
                 </div>
                 
                 <div className="space-y-4">
@@ -1217,6 +1211,119 @@ export default function Candidates() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Phone Management Modal */}
+      <Dialog open={isPhoneModalOpen} onOpenChange={setIsPhoneModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Telefones</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {phoneNumbers.map((phone, index) => (
+              <div key={index} className="flex gap-2 items-end">
+                <div className="w-20">
+                  <Label className="text-xs">DDI</Label>
+                  <Select 
+                    value={phone.ddi} 
+                    onValueChange={(value) => {
+                      const newPhones = [...phoneNumbers];
+                      newPhones[index].ddi = value;
+                      setPhoneNumbers(newPhones);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="+55">+55</SelectItem>
+                      <SelectItem value="+1">+1</SelectItem>
+                      <SelectItem value="+54">+54</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-16">
+                  <Label className="text-xs">DDD</Label>
+                  <Input
+                    placeholder="DDD"
+                    value={phone.ddd}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 2);
+                      const newPhones = [...phoneNumbers];
+                      newPhones[index].ddd = value;
+                      setPhoneNumbers(newPhones);
+                    }}
+                    maxLength={2}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs">Número</Label>
+                  <Input
+                    placeholder="Número"
+                    value={phone.number}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 9);
+                      const newPhones = [...phoneNumbers];
+                      newPhones[index].number = value;
+                      setPhoneNumbers(newPhones);
+                    }}
+                    maxLength={9}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setPhoneNumbers(phoneNumbers.filter((_, i) => i !== index));
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPhoneNumbers([...phoneNumbers, { ddi: '+55', ddd: '', number: '' }]);
+              }}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Telefone
+            </Button>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsPhoneModalOpen(false);
+                // Reload phone numbers from candidate if editing
+                if (isEditMode && selectedCandidate) {
+                  if (selectedCandidate.phone && Array.isArray(selectedCandidate.phone)) {
+                    const parsedPhones = selectedCandidate.phone.map(phoneStr => {
+                      if (phoneStr.length >= 12) {
+                        const ddi = phoneStr.substring(0, 2);
+                        const ddd = phoneStr.substring(2, 4);
+                        const number = phoneStr.substring(4);
+                        return { ddi: `+${ddi}`, ddd, number };
+                      }
+                      return { ddi: '+55', ddd: '', number: phoneStr };
+                    });
+                    setPhoneNumbers(parsedPhones);
+                  }
+                }
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSavePhones}>
+              Salvar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

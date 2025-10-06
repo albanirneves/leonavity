@@ -90,9 +90,12 @@ export default function Events() {
   // Background image states
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [backgroundImageCategoriesUrl, setBackgroundImageCategoriesUrl] = useState<string | null>(null);
+  const [isUploadingImageCategories, setIsUploadingImageCategories] = useState(false);
   const [layoutColor, setLayoutColor] = useState('#fddf59');
   const [tempLayoutColor, setTempLayoutColor] = useState('#fddf59');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputCategoriesRef = useRef<HTMLInputElement>(null);
   const {
     toast
   } = useToast();
@@ -201,6 +204,14 @@ export default function Events() {
       });
       return;
     }
+    const defaultMessage = `Olá, como vai?
+
+Bem vindo ao evento! 
+
+É um prazer receber sua mensagem e ajudar você a contribuir com a realização do sonho da sua candidata.  
+
+Vamos iniciar seu voto:`;
+
     const {
       error
     } = await supabase.from('events').insert([{
@@ -211,7 +222,8 @@ export default function Events() {
       active: eventForm.active,
       id_account: parseInt(eventForm.id_account),
       pix_tax: eventForm.pix_tax ? parseFloat(eventForm.pix_tax) : 0,
-      card_tax: eventForm.card_tax ? parseFloat(eventForm.card_tax) : 0
+      card_tax: eventForm.card_tax ? parseFloat(eventForm.card_tax) : 0,
+      msg_saudacao: defaultMessage
     }]);
     if (error) {
       toast({
@@ -498,8 +510,9 @@ export default function Events() {
     }
     setIsParciaisDialogOpen(true);
 
-    // Check if background image exists
+    // Check if background images exist
     await checkBackgroundImage(event.id);
+    await checkBackgroundImageCategories(event.id);
   };
   const handleAddSchedule = async () => {
     if (!selectedEventForParciais) return;
@@ -694,6 +707,25 @@ Boa sorte❣️`;
       setBackgroundImageUrl(null);
     }
   };
+
+  const checkBackgroundImageCategories = async (eventId: number) => {
+    const imagePath = `assets/background_categories_event_${eventId}.png`;
+    const {
+      data
+    } = await supabase.storage.from('candidates').getPublicUrl(imagePath);
+
+    // Check if the image actually exists by trying to fetch it
+    try {
+      const response = await fetch(data.publicUrl);
+      if (response.ok) {
+        setBackgroundImageCategoriesUrl(data.publicUrl);
+      } else {
+        setBackgroundImageCategoriesUrl(null);
+      }
+    } catch {
+      setBackgroundImageCategoriesUrl(null);
+    }
+  };
   const resizeImageToStoryFormat = (file: File): Promise<File> => {
     return new Promise(resolve => {
       const canvas = document.createElement('canvas');
@@ -720,6 +752,46 @@ Boa sorte❣️`;
         // Fill background with white
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+        // Draw the image
+        ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+        canvas.toBlob(blob => {
+          if (blob) {
+            const resizedFile = new File([blob], file.name, {
+              type: 'image/png',
+              lastModified: Date.now()
+            });
+            resolve(resizedFile);
+          }
+        }, 'image/png', 0.9);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const resizeImageToSquareFormat = (file: File): Promise<File> => {
+    return new Promise(resolve => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      img.onload = () => {
+        // Square format: 1:1 aspect ratio
+        const targetSize = 1080;
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+
+        // Calculate scaling to cover the entire canvas
+        const scale = targetSize / Math.max(img.width, img.height);
+        const scaledWidth = img.width * scale;
+        const scaledHeight = img.height * scale;
+
+        // Center the image
+        const x = (targetSize - scaledWidth) / 2;
+        const y = (targetSize - scaledHeight) / 2;
+
+        // Fill background with white
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, targetSize, targetSize);
 
         // Draw the image
         ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
@@ -803,6 +875,85 @@ Boa sorte❣️`;
       toast({
         title: 'Sucesso',
         description: 'Background Parciais removido com sucesso'
+      });
+    } catch (error) {
+      console.error('Error removing image:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao remover a imagem',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleImageUploadCategories = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedEventForParciais) return;
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, selecione um arquivo de imagem',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setIsUploadingImageCategories(true);
+    try {
+      // Resize image to square format (1:1)
+      const resizedFile = await resizeImageToSquareFormat(file);
+      const imagePath = `assets/background_categories_event_${selectedEventForParciais.id}.png`;
+
+      // Upload to Supabase Storage
+      const {
+        error: uploadError
+      } = await supabase.storage.from('candidates').upload(imagePath, resizedFile, {
+        upsert: true,
+        contentType: 'image/png'
+      });
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get the public URL with cache busting
+      const {
+        data
+      } = await supabase.storage.from('candidates').getPublicUrl(imagePath);
+
+      // Add cache busting to force refresh of the thumbnail
+      const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`;
+      setBackgroundImageCategoriesUrl(cacheBustedUrl);
+      toast({
+        title: 'Sucesso',
+        description: 'Background Categorias atualizado com sucesso'
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao fazer upload da imagem',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUploadingImageCategories(false);
+      // Clear the input
+      if (fileInputCategoriesRef.current) {
+        fileInputCategoriesRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveBackgroundImageCategories = async () => {
+    if (!selectedEventForParciais) return;
+    const imagePath = `assets/background_categories_event_${selectedEventForParciais.id}.png`;
+    try {
+      const {
+        error
+      } = await supabase.storage.from('candidates').remove([imagePath]);
+      if (error) throw error;
+      setBackgroundImageCategoriesUrl(null);
+      toast({
+        title: 'Sucesso',
+        description: 'Background Categorias removido com sucesso'
       });
     } catch (error) {
       console.error('Error removing image:', error);
@@ -1261,21 +1412,54 @@ Boa sorte❣️`;
           </DialogHeader>
           
           <div className="space-y-6 overflow-y-auto max-h-[calc(85vh-8rem)] pr-2">
-            {/* Background Image Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-medium">Background Parciais</Label>
-                <div className="text-sm text-muted-foreground">Formato 9:16 (Stories)</div>
+            {/* Background Images Section */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Background Categorias */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-medium">Background Categorias</Label>
+                  <div className="text-sm text-muted-foreground">1:1</div>
+                </div>
+                
+                <div className="flex flex-col gap-4">
+                  <input ref={fileInputCategoriesRef} type="file" accept="image/*" onChange={handleImageUploadCategories} className="hidden" />
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => fileInputCategoriesRef.current?.click()} disabled={isUploadingImageCategories} className="flex-1">
+                      <Upload className="h-4 w-4 mr-2" />
+                      {backgroundImageCategoriesUrl ? 'Substituir' : 'Upload'}
+                    </Button>
+                    
+                    {backgroundImageCategoriesUrl && <Button variant="outline" onClick={handleRemoveBackgroundImageCategories} className="text-destructive hover:text-destructive">
+                        <X className="h-4 w-4" />
+                      </Button>}
+                  </div>
+                  
+                  {isUploadingImageCategories && <div className="text-sm text-muted-foreground">
+                      Fazendo upload...
+                    </div>}
+                  
+                  {/* Image Preview */}
+                  {backgroundImageCategoriesUrl && <div className="w-20 h-20 border rounded-lg overflow-hidden bg-gray-100 mx-auto">
+                      <img src={backgroundImageCategoriesUrl} alt="Background Categorias" className="w-full h-full object-cover" />
+                    </div>}
+                </div>
               </div>
-              
-              <div className="flex gap-4">
-                <div className="flex-1 space-y-4">
+
+              {/* Background Parciais */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-medium">Background Parciais</Label>
+                  <div className="text-sm text-muted-foreground">9:16</div>
+                </div>
+                
+                <div className="flex flex-col gap-4">
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                   
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploadingImage} className="flex-1">
                       <Upload className="h-4 w-4 mr-2" />
-                      {backgroundImageUrl ? 'Substituir Imagem' : 'Upload Imagem'}
+                      {backgroundImageUrl ? 'Substituir' : 'Upload'}
                     </Button>
                     
                     {backgroundImageUrl && <Button variant="outline" onClick={handleRemoveBackgroundImage} className="text-destructive hover:text-destructive">
@@ -1283,33 +1467,33 @@ Boa sorte❣️`;
                       </Button>}
                   </div>
                   
-                  {/* Layout Color Section */}
-                  <div className="space-y-2">
-                    <Label className="text-base font-medium">Cor do Layout</Label>
-                    <div className="flex items-center gap-2">
-                      <input type="color" value={tempLayoutColor} onChange={e => setTempLayoutColor(e.target.value)} className="w-12 h-10 border rounded cursor-pointer" />
-                      <Input type="text" value={tempLayoutColor} onChange={e => {
-                      const value = e.target.value;
-                      // Validate hex color format
-                      if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
-                        setTempLayoutColor(value);
-                      }
-                    }} placeholder="#000000" className="w-24 font-mono text-sm" maxLength={7} />
-                      <Button variant="outline" size="sm" onClick={handleLayoutColorChange}>
-                        Salvar Cor
-                      </Button>
-                    </div>
-                  </div>
-                  
                   {isUploadingImage && <div className="text-sm text-muted-foreground">
-                      Fazendo upload e ajustando para formato 9:16...
+                      Fazendo upload...
+                    </div>}
+                  
+                  {/* Image Preview */}
+                  {backgroundImageUrl && <div className="w-20 h-36 border rounded-lg overflow-hidden bg-gray-100 mx-auto">
+                      <img src={backgroundImageUrl} alt="Background Parciais" className="w-full h-full object-cover" />
                     </div>}
                 </div>
-                
-                {/* Image Preview */}
-                {backgroundImageUrl && <div className="w-20 h-36 border rounded-lg overflow-hidden bg-gray-100">
-                    <img src={backgroundImageUrl} alt="Background Parciais" className="w-full h-full object-cover" />
-                  </div>}
+              </div>
+            </div>
+
+            {/* Layout Color Section */}
+            <div className="space-y-2">
+              <Label className="text-base font-medium">Cor do Layout</Label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={tempLayoutColor} onChange={e => setTempLayoutColor(e.target.value)} className="w-12 h-10 border rounded cursor-pointer" />
+                <Input type="text" value={tempLayoutColor} onChange={e => {
+                const value = e.target.value;
+                // Validate hex color format
+                if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
+                  setTempLayoutColor(value);
+                }
+              }} placeholder="#000000" className="w-24 font-mono text-sm" maxLength={7} />
+                <Button variant="outline" size="sm" onClick={handleLayoutColorChange}>
+                  Salvar Cor
+                </Button>
               </div>
             </div>
 
