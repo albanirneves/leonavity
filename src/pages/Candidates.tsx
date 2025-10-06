@@ -687,6 +687,45 @@ export default function Candidates() {
     }
   };
 
+  const handleSavePhones = async () => {
+    if (!selectedCandidate && !isAddModalOpen) return;
+
+    try {
+      // Convert phone numbers from UI format to string array
+      const phoneStrings = phoneNumbers
+        .filter(p => p.ddd && p.number)
+        .map(p => {
+          const ddi = p.ddi.replace('+', '');
+          return `${ddi}${p.ddd}${p.number}`;
+        });
+
+      // If editing existing candidate, update in database
+      if (isEditMode && selectedCandidate) {
+        const { error } = await supabase
+          .from('candidates')
+          .update({
+            phone: phoneStrings.length > 0 ? phoneStrings as any : []
+          })
+          .eq('id', selectedCandidate.id);
+
+        if (error) throw error;
+
+        toast({ title: 'Sucesso', description: 'Telefones salvos com sucesso' });
+        
+        // Refresh candidates list
+        await fetchCandidates();
+      }
+      // If creating new candidate, just close modal (phones will be saved when candidate is created)
+      else {
+        toast({ title: 'Telefones configurados', description: 'Serão salvos ao criar a candidata' });
+      }
+
+      setIsPhoneModalOpen(false);
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Erro ao salvar telefones', variant: 'destructive' });
+    }
+  };
+
   const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -1258,9 +1297,29 @@ export default function Candidates() {
           <div className="flex justify-end gap-2 mt-4">
             <Button 
               variant="outline" 
-              onClick={() => setIsPhoneModalOpen(false)}
+              onClick={() => {
+                setIsPhoneModalOpen(false);
+                // Reload phone numbers from candidate if editing
+                if (isEditMode && selectedCandidate) {
+                  if (selectedCandidate.phone && Array.isArray(selectedCandidate.phone)) {
+                    const parsedPhones = selectedCandidate.phone.map(phoneStr => {
+                      if (phoneStr.length >= 12) {
+                        const ddi = phoneStr.substring(0, 2);
+                        const ddd = phoneStr.substring(2, 4);
+                        const number = phoneStr.substring(4);
+                        return { ddi: `+${ddi}`, ddd, number };
+                      }
+                      return { ddi: '+55', ddd: '', number: phoneStr };
+                    });
+                    setPhoneNumbers(parsedPhones);
+                  }
+                }
+              }}
             >
-              Fechar
+              Cancelar
+            </Button>
+            <Button onClick={handleSavePhones}>
+              Salvar
             </Button>
           </div>
         </DialogContent>
