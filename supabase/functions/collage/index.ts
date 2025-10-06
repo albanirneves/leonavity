@@ -15,26 +15,24 @@ const SUPABASE_KEY =
 const DEFAULT_BUCKET = "candidates";
 
 // ---------- CANVAS / LAYOUT ----------
-// Reduced dimensions by ~40% to save CPU
-const CANVAS_W = 819; // Was 1365
-const CANVAS_H = 819; // Was 1365
+const CANVAS_W = 1365;
+const CANVAS_H = 1365;
 
-const PHOTO_W = 136; // Was 226
-const PHOTO_H = 182; // Was 303
-const NAME_BAR_H = 35; // Was 58
+const PHOTO_W = 226;
+const PHOTO_H = 303;
+const NAME_BAR_H = 58;
 
 // Slots (top-left of the photo area; frames PNG should align visually)
-// Scaled proportionally
 const SLOTS = [
-  { x: 121,  y: 88 },
-  { x: 352, y: 88 },
-  { x: 581, y: 88 },
-  { x: 121,  y: 334 },
-  { x: 352, y: 334 },
-  { x: 581, y: 334 },
-  { x: 121,  y: 577 },
-  { x: 352, y: 577 },
-  { x: 581, y: 577 },
+  { x: 201,  y: 146 },
+  { x: 586, y: 146 },
+  { x: 968, y: 146 },
+  { x: 201,  y: 556 },
+  { x: 586, y: 556 },
+  { x: 968, y: 556 },
+  { x: 201,  y: 961 },
+  { x: 586, y: 961 },
+  { x: 968, y: 961 },
 ] as const;
 
 // ---------- COLOR HELPERS ----------
@@ -72,10 +70,9 @@ function recolorNonTransparent(img: Image, hex: string): Image {
 }
 
 // --- Frame masking helpers for last-page empty slots ---
-// Scaled proportionally (~60% of original)
-const FRAME_PAD_X = 14;      // horizontal pad of yellow frame beyond photo
-const FRAME_PAD_TOP = 14;    // top pad beyond photo
-const FRAME_PAD_BOTTOM = 14; // extra bottom pad (besides NAME_BAR_H)
+const FRAME_PAD_X = 24;      // horizontal pad of yellow frame beyond photo
+const FRAME_PAD_TOP = 24;    // top pad beyond photo
+const FRAME_PAD_BOTTOM = 24; // extra bottom pad (besides NAME_BAR_H)
 
 function frameRectForSlot(idx: number) {
   const s = SLOTS[idx];
@@ -125,30 +122,6 @@ async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
 async function loadImage(url: string): Promise<Image> {
   const buf = await fetchArrayBuffer(url);
   return await Image.decode(new Uint8Array(buf));
-}
-
-// --- Retry helper (exponential backoff with jitter)
-async function retry<T>(fn: () => Promise<T>, opts: { retries?: number; baseMs?: number } = {}): Promise<T> {
-  const retries = opts.retries ?? 3;
-  const baseMs  = opts.baseMs  ?? 250;
-  let lastErr: unknown;
-  for (let i = 0; i <= retries; i++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastErr = err;
-      if (i === retries) break;
-      const jitter = Math.floor(Math.random() * 100);
-      const delay = baseMs * Math.pow(2, i) + jitter;
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
-  throw lastErr;
-}
-
-async function loadImageWithRetry(url: string): Promise<Image> {
-  const ab = await retry(() => fetchArrayBuffer(url));
-  return await Image.decode(new Uint8Array(ab));
 }
 
 // Cover-fit an image into the target w×h without distortion.
@@ -205,43 +178,17 @@ async function fitTextRender(
   color?: string, // aceita apenas hex sem alpha; se inválido usa default
   bold = false,
   boldStrength = 1, // 1–2 geralmente é suficiente
-  maxHeight?: number,
 ): Promise<{ img: Image; size: number }> {
   const fontBytes = await loadTTFBytes();
   const colorNum = normalizeHex6(color);
   for (let s = startSize; s >= minSize; s -= 2) {
     let img = await Image.renderText(fontBytes, s, text, colorNum);
     if (bold) img = embolden(img, boldStrength);
-    const fitsWidth = img.width  <= maxWidth;
-    const fitsHeight = maxHeight ? (img.height <= maxHeight) : true;
-    if (fitsWidth && fitsHeight) return { img, size: s };
+    if (img.width <= maxWidth) return { img, size: s };
   }
   let img = await Image.renderText(fontBytes, minSize, text, colorNum);
   if (bold) img = embolden(img, boldStrength);
   return { img, size: minSize };
-}
-
-// Load and resize photo to reduce memory usage (simplified for performance)
-async function loadAndResizePhoto(url: string): Promise<Image> {
-  const MAX_HEIGHT = 800; // Reduced from 1024 for faster processing
-  const MAX_WIDTH = 600;
-  
-  // Load original image
-  let img = await loadImage(url);
-  
-  // Calculate resize to fit within bounds
-  const widthRatio = MAX_WIDTH / img.width;
-  const heightRatio = MAX_HEIGHT / img.height;
-  const scale = Math.min(widthRatio, heightRatio, 1); // Don't upscale
-  
-  // Only resize if needed
-  if (scale < 1) {
-    const newWidth = Math.round(img.width * scale);
-    const newHeight = Math.round(img.height * scale);
-    img = img.resize(newWidth, newHeight);
-  }
-  
-  return img;
 }
 // ---------- HTTP ----------
 serve(async (req) => {
@@ -320,100 +267,72 @@ serve(async (req) => {
       candidateGroups.push(group);
     }
 
-    const [bgImgRaw, framesRaw0] = await Promise.all([
-      loadImageWithRetry(backgroundUrl),
-      loadImageWithRetry(framesUrl),
-    ]);
-
-    const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
-      ? framesRaw0.resize(CANVAS_W, CANVAS_H)
-      : framesRaw0;
-
+    // Criar banners para cada grupo
     const bannerUrls: string[] = [];
-    
-    console.log(`Processing ${candidateGroups.length} banner(s) with total ${candidates.length} candidates`);
     
     for (let groupIndex = 0; groupIndex < candidateGroups.length; groupIndex++) {
       const cands = candidateGroups[groupIndex];
       const bannerNumber = groupIndex + 1;
       const outputPath = `event_${id_event}_category_${id_category}_banner_${bannerNumber}.png`;
 
-      console.log(`Starting banner ${bannerNumber} with ${cands.length} candidates`);
-
       // Load base images
-      console.log('Loading background and frames...');
       const [bgImgRaw, framesRaw0] = await Promise.all([
         loadImage(backgroundUrl),
         loadImage(framesUrl),
       ]);
 
       // Prepare canvas
-      console.log('Preparing canvas...');
       const canvas = new Image(CANVAS_W, CANVAS_H);
       canvas.fill(0x00000000);
 
-      // Background (cover) - resize background to canvas size
+      // Background (cover)
       const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
       canvas.composite(bg, 0, 0);
 
-      // Paste photos one by one (load and resize individually to save memory)
-      console.log(`Loading and compositing ${cands.length} photos...`);
+      // Paste photos
       for (let i = 0; i < cands.length; i++) {
         const slot = SLOTS[i];
         const { photoUrl } = cands[i];
-        try {
-          // Load and resize photo to reduce memory usage
-          const photo = await loadAndResizePhoto(photoUrl);
-          // Use cover function to maintain aspect ratio and avoid distortion
-          const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
-          canvas.composite(photoRaw, slot.x, slot.y);
-          console.log(`Composited photo ${i + 1}/${cands.length}`);
-        } catch (error) {
-          console.error(`Error processing photo ${i + 1}:`, error);
-        }
+        const photo = await loadImage(photoUrl);
+        // Use cover function to maintain aspect ratio and avoid distortion
+        const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
+        canvas.composite(photoRaw, slot.x, slot.y);
       }
+
+      // normaliza dimensões do frame para o tamanho do canvas
+      const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
+        ? framesRaw0.resize(CANVAS_W, CANVAS_H)
+        : framesRaw0;
 
       const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
       const framesOverlay = punchOutEmptyFrameSlots(tintedFrames, cands.length);
       canvas.composite(framesOverlay, 0, 0);
 
-      // Name bars + centered texts (simplified for performance)
-      console.log('Rendering candidate names...');
+      // Name bars + centered texts
       for (let i = 0; i < cands.length; i++) {
         const slot = SLOTS[i];
         const globalCandidateNumber = (groupIndex * 9) + i + 1;
         const name = (globalCandidateNumber + " - " + cands[i].name).toUpperCase();
 
-        try {
-          // Bar spans photo width (with a small visual inset from the overlay)
-          const barInsetX = 4; // Scaled down
-          const barX = slot.x + barInsetX;
-          const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 10; // Adjusted
-          const barW = PHOTO_W;
-          const barH = NAME_BAR_H;
+        // Bar spans photo width (with a small visual inset from the overlay)
+        const barInsetX = 7;
+        const barX = slot.x + barInsetX;
+        const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 17;
+        const barW = PHOTO_W;
+        const barH = NAME_BAR_H;
 
-        // Padding interno para não colar nas bordas
+        // Fit text within the bar width, leaving side padding so long names don't touch edges
         const sidePadding = 18;
-        const verticalPadding = 8;
-        const maxTextW = Math.max(10, barW - sidePadding * 2);
-        const maxTextH = Math.max(10, barH - verticalPadding * 2);
-
-        // Tamanho inicial baseado na altura útil da barra (com teto),
-        // e mínimo que evita over-shrink em nomes enormes.
-        const startSize = Math.min(20, Math.floor(maxTextH * 0.95));
-        const minSize   = 10;
-
+        const maxTextW = barW - sidePadding * 2;
         const { img: nameImg } = await fitTextRender(
-          name,               // texto
-          maxTextW,           // largura máxima
-          startSize,          // startSize dinâmico
-          minSize,            // minSize
-          '#5F19DD',          // cor
-          true,               // bold
-          1,                  // boldStrength
-          maxTextH,           // **** altura máxima considerada ****
+          name,
+          maxTextW,
+          20,
+          16,
+          '#5F19DD',
+          true,
+          1
         );
-
         // HORIZONTAL CENTER: center text image inside the bar width
         const textX = barX + Math.floor((barW - nameImg.width) / 2);
         // Keep vertical alignment centered inside the yellow bar
@@ -422,44 +341,34 @@ serve(async (req) => {
       }
 
       const categoryName = categoryData?.name || 'Categoria';
-      const titleMaxW = CANVAS_W - 40;
-      const titleMaxH = 110;   // área útil no topo
       const { img: titleImage } = await fitTextRender(
         categoryName,
-        titleMaxW,
-        96,     // start
-        40,     // min
+        CANVAS_W - 40, // Maximum width with some padding
+        75,
+        65,
         '#fddf59',
         true,
-        1,
-        titleMaxH,
+        1
       );
       // Center the title horizontally
       const textX = Math.floor((CANVAS_W - titleImage.width) / 2);
       const textY = 5;
       canvas.composite(titleImage, textX, textY);
 
-
       // Encode PNG
-      console.log('Encoding PNG...');
       const png = await canvas.encode();
-      console.log(`PNG encoded, size: ${png.length} bytes`);
 
       // Upload to Storage
-      const { error: upErr } = await retry(() =>
-        supabase.storage.from(bucket).upload(
-          outputPath,
-          new Blob([new Uint8Array(png)], { type: "image/png" }),
-          { upsert: true, contentType: "image/png" },
-        ),
-        { retries: 3, baseMs: 300 }
+      const { error: upErr } = await supabase.storage.from(bucket).upload(
+        outputPath,
+        new Blob([new Uint8Array(png)], { type: "image/png" }),
+        { upsert: true, contentType: "image/png" },
       );
       if (upErr) throw upErr;
 
       // Get public URL
       const { data: pub } = supabase.storage.from(bucket).getPublicUrl(outputPath);
       bannerUrls.push(pub.publicUrl);
-      console.log(`Banner ${bannerNumber} completed: ${pub.publicUrl}`);
     }
 
     return Response.json({
