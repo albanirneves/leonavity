@@ -313,12 +313,15 @@ export default function Candidates() {
     setSelectedCandidate(candidateWithFreshPhoto);
     
     // Parse phone numbers array from strings to UI format
+    // Format: "5518996473715" -> DDI: 55 (2 digits), DDD: 18 (2 digits), Number: 996473715 (rest)
     if (candidate.phone && Array.isArray(candidate.phone)) {
       const parsedPhones = candidate.phone.map(phoneStr => {
-        // Extract DDI (first 2-3 digits), DDD (next 2 digits), Number (rest)
-        const match = phoneStr.match(/^(\+?\d{1,3})(\d{2})(\d{8,9})$/);
-        if (match) {
-          return { ddi: match[1].startsWith('+') ? match[1] : `+${match[1]}`, ddd: match[2], number: match[3] };
+        // DDI is always first 2 digits, DDD is next 2 digits, rest is number
+        if (phoneStr.length >= 12) {
+          const ddi = phoneStr.substring(0, 2);
+          const ddd = phoneStr.substring(2, 4);
+          const number = phoneStr.substring(4);
+          return { ddi: `+${ddi}`, ddd, number };
         }
         return { ddi: '+55', ddd: '', number: phoneStr };
       });
