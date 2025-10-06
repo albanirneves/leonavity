@@ -12,12 +12,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Skeleton } from '@/components/ui/skeleton';
 import { CandidateImage } from '@/components/CandidateImage';
 
-interface PhoneNumber {
-  ddi: string;
-  ddd: string;
-  number: string;
-}
-
 interface Candidate {
   id: number;
   name: string;
@@ -26,7 +20,7 @@ interface Candidate {
   id_category: number;
   id_candidate: number;
   created_at: string;
-  phone?: PhoneNumber[];
+  phone?: string[];
 }
 
 interface Event {
@@ -67,7 +61,7 @@ export default function Candidates() {
   const [candidateToDelete, setCandidateToDelete] = useState<CandidateWithDetails | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
-  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
+  const [phoneNumbers, setPhoneNumbers] = useState<Array<{ddi: string, ddd: string, number: string}>>([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const { toast } = useToast();
 
@@ -258,7 +252,7 @@ export default function Candidates() {
             category_name: category?.name || 'Categoria não encontrada',
             votes_count: totalVotes,
             photo_url: photoData.publicUrl,
-            phone: (candidate.phone ? candidate.phone : []) as unknown as PhoneNumber[]
+            phone: Array.isArray(candidate.phone) ? candidate.phone as string[] : []
           };
         })
       );
@@ -318,9 +312,17 @@ export default function Candidates() {
     
     setSelectedCandidate(candidateWithFreshPhoto);
     
-    // Parse phone numbers array
+    // Parse phone numbers array from strings to UI format
     if (candidate.phone && Array.isArray(candidate.phone)) {
-      setPhoneNumbers(candidate.phone);
+      const parsedPhones = candidate.phone.map(phoneStr => {
+        // Extract DDI (first 2-3 digits), DDD (next 2 digits), Number (rest)
+        const match = phoneStr.match(/^(\+?\d{1,3})(\d{2})(\d{8,9})$/);
+        if (match) {
+          return { ddi: match[1].startsWith('+') ? match[1] : `+${match[1]}`, ddd: match[2], number: match[3] };
+        }
+        return { ddi: '+55', ddd: '', number: phoneStr };
+      });
+      setPhoneNumbers(parsedPhones);
     } else {
       setPhoneNumbers([]);
     }
@@ -440,7 +442,15 @@ export default function Candidates() {
         ? existingCandidates[0].id_candidate + 1 
         : 1;
 
-      // First, create the candidate with phone numbers array
+      // Convert phone numbers from UI format to string array
+      const phoneStrings = phoneNumbers
+        .filter(p => p.ddd && p.number)
+        .map(p => {
+          const ddi = p.ddi.replace('+', '');
+          return `${ddi}${p.ddd}${p.number}`;
+        });
+
+      // First, create the candidate with phone numbers as string array
       const { error } = await supabase
         .from('candidates')
         .insert([{
@@ -449,7 +459,7 @@ export default function Candidates() {
           id_event: parseInt(newCandidateForm.id_event),
           id_category: parseInt(newCandidateForm.id_category),
           id_candidate: nextIdCandidate,
-          phone: phoneNumbers.length > 0 ? phoneNumbers as any : []
+          phone: phoneStrings.length > 0 ? phoneStrings as any : []
         }]);
 
       if (error) throw error;
@@ -574,7 +584,15 @@ export default function Candidates() {
       
       const bannerShouldRegenerate = nameChanged || idCandidateChanged || idCategoryChanged || photoChanged;
 
-      // Update candidate with phone numbers array
+      // Convert phone numbers from UI format to string array
+      const phoneStrings = phoneNumbers
+        .filter(p => p.ddd && p.number)
+        .map(p => {
+          const ddi = p.ddi.replace('+', '');
+          return `${ddi}${p.ddd}${p.number}`;
+        });
+
+      // Update candidate with phone numbers as string array
       const { error } = await supabase
         .from('candidates')
         .update({
@@ -583,7 +601,7 @@ export default function Candidates() {
           id_event: parseInt(editCandidateForm.id_event),
           id_category: parseInt(editCandidateForm.id_category),
           id_candidate: parseInt(editCandidateForm.id_candidate),
-          phone: phoneNumbers.length > 0 ? phoneNumbers as any : []
+          phone: phoneStrings.length > 0 ? phoneStrings as any : []
         })
         .eq('id', selectedCandidate.id);
 
