@@ -56,7 +56,7 @@ export type Database = {
           id_event: number
           name: string
           name_complete: string | null
-          phone: string | null
+          phone: Json | null
         }
         Insert: {
           created_at?: string
@@ -66,7 +66,7 @@ export type Database = {
           id_event: number
           name: string
           name_complete?: string | null
-          phone?: string | null
+          phone?: Json | null
         }
         Update: {
           created_at?: string
@@ -76,7 +76,7 @@ export type Database = {
           id_event?: number
           name?: string
           name_complete?: string | null
-          phone?: string | null
+          phone?: Json | null
         }
         Relationships: [
           {
