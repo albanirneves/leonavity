@@ -201,6 +201,14 @@ export default function Events() {
       });
       return;
     }
+    const defaultMessage = `Olá, como vai?
+
+Bem vindo ao evento! 
+
+É um prazer receber sua mensagem e ajudar você a contribuir com a realização do sonho da sua candidata.  
+
+Vamos iniciar seu voto:`;
+
     const {
       error
     } = await supabase.from('events').insert([{
@@ -211,7 +219,8 @@ export default function Events() {
       active: eventForm.active,
       id_account: parseInt(eventForm.id_account),
       pix_tax: eventForm.pix_tax ? parseFloat(eventForm.pix_tax) : 0,
-      card_tax: eventForm.card_tax ? parseFloat(eventForm.card_tax) : 0
+      card_tax: eventForm.card_tax ? parseFloat(eventForm.card_tax) : 0,
+      msg_saudacao: defaultMessage
     }]);
     if (error) {
       toast({
