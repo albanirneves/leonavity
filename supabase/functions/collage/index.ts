@@ -22,17 +22,20 @@ const PHOTO_W = 226;
 const PHOTO_H = 303;
 const NAME_BAR_H = 58;
 
+const MAX_PHOTO_HEIGHT = 1024;
+const TRANSFORM_QUALITY = 60;
+      
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
-  { x: 201,  y: 146 },
-  { x: 586, y: 146 },
-  { x: 968, y: 146 },
-  { x: 201,  y: 556 },
-  { x: 586, y: 556 },
-  { x: 968, y: 556 },
-  { x: 201,  y: 961 },
-  { x: 586, y: 961 },
-  { x: 968, y: 961 },
+  { x: 196,  y: 146 },
+  { x: 581, y: 146 },
+  { x: 963, y: 146 },
+  { x: 196,  y: 556 },
+  { x: 581, y: 556 },
+  { x: 963, y: 556 },
+  { x: 196,  y: 961 },
+  { x: 581, y: 961 },
+  { x: 963, y: 961 },
 ] as const;
 
 // ---------- COLOR HELPERS ----------
@@ -124,6 +127,30 @@ async function loadImage(url: string): Promise<Image> {
   return await Image.decode(new Uint8Array(buf));
 }
 
+// --- Retry helper (exponential backoff with jitter)
+async function retry<T>(fn: () => Promise<T>, opts: { retries?: number; baseMs?: number } = {}): Promise<T> {
+  const retries = opts.retries ?? 3;
+  const baseMs  = opts.baseMs  ?? 250;
+  let lastErr: unknown;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i === retries) break;
+      const jitter = Math.floor(Math.random() * 100);
+      const delay = baseMs * Math.pow(2, i) + jitter;
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
+async function loadImageWithRetry(url: string): Promise<Image> {
+  const ab = await retry(() => fetchArrayBuffer(url));
+  return await Image.decode(new Uint8Array(ab));
+}
+
 // Cover-fit an image into the target w×h without distortion.
 function cover(img: Image, targetW: number, targetH: number): Image {
   const scale = Math.max(targetW / img.width, targetH / img.height);
@@ -133,6 +160,17 @@ function cover(img: Image, targetW: number, targetH: number): Image {
   const x = Math.floor((w - targetW) / 2);
   const y = Math.floor((h - targetH) / 2);
   return resized.crop(x, y, targetW, targetH);
+}
+
+// Fit an image inside the target dimensions without cropping. The image is
+// scaled down (maintaining aspect ratio) so that it fits entirely within
+// targetW × targetH.  The caller should center the returned image within
+// the desired slot.  Unlike `cover`, no part of the original image is cut.
+function contain(img: Image, targetW: number, targetH: number): Image {
+  const scale = Math.min(targetW / img.width, targetH / img.height);
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  return img.resize(w, h);
 }
 
 // Load the TTF from your Storage (cached)
@@ -178,13 +216,16 @@ async function fitTextRender(
   color?: string, // aceita apenas hex sem alpha; se inválido usa default
   bold = false,
   boldStrength = 1, // 1–2 geralmente é suficiente
+  maxHeight?: number,
 ): Promise<{ img: Image; size: number }> {
   const fontBytes = await loadTTFBytes();
   const colorNum = normalizeHex6(color);
   for (let s = startSize; s >= minSize; s -= 2) {
     let img = await Image.renderText(fontBytes, s, text, colorNum);
     if (bold) img = embolden(img, boldStrength);
-    if (img.width <= maxWidth) return { img, size: s };
+    const fitsWidth = img.width  <= maxWidth;
+    const fitsHeight = maxHeight ? (img.height <= maxHeight) : true;
+    if (fitsWidth && fitsHeight) return { img, size: s };
   }
   let img = await Image.renderText(fontBytes, minSize, text, colorNum);
   if (bold) img = embolden(img, boldStrength);
@@ -262,24 +303,26 @@ serve(async (req) => {
     for (let i = 0; i < candidates.length; i += 9) {
       const group = candidates.slice(i, i + 9).map((c) => {
         const filename = `event_${id_event}_category_${id_category}_candidate_${c.id_candidate}.jpg`;
-        return { name: c.name, photoUrl: `${baseForPhotos}/${filename}` };
+        return { name: c.name, photoPath: filename };
       });
       candidateGroups.push(group);
     }
+    
+    const [bgImgRaw, framesRaw0] = await Promise.all([
+      loadImageWithRetry(backgroundUrl),
+      loadImageWithRetry(framesUrl),
+    ]);
 
-    // Criar banners para cada grupo
+    const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
+      ? framesRaw0.resize(CANVAS_W, CANVAS_H)
+      : framesRaw0;
+
     const bannerUrls: string[] = [];
     
     for (let groupIndex = 0; groupIndex < candidateGroups.length; groupIndex++) {
       const cands = candidateGroups[groupIndex];
       const bannerNumber = groupIndex + 1;
       const outputPath = `event_${id_event}_category_${id_category}_banner_${bannerNumber}.png`;
-
-      // Load base images
-      const [bgImgRaw, framesRaw0] = await Promise.all([
-        loadImage(backgroundUrl),
-        loadImage(framesUrl),
-      ]);
 
       // Prepare canvas
       const canvas = new Image(CANVAS_W, CANVAS_H);
@@ -289,20 +332,41 @@ serve(async (req) => {
       const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
       canvas.composite(bg, 0, 0);
 
-      // Paste photos
+      // Para cada candidata, solicita-se uma versão transformada (height 1024, quality 60).
       for (let i = 0; i < cands.length; i++) {
         const slot = SLOTS[i];
-        const { photoUrl } = cands[i];
-        const photo = await loadImage(photoUrl);
-        // Use cover function to maintain aspect ratio and avoid distortion
-        const photoRaw = cover(photo, PHOTO_W, PHOTO_H);
-        canvas.composite(photoRaw, slot.x, slot.y);
+        const { photoPath } = cands[i];
+        let effectiveUrl: string | null = null;
+        try {
+          const { data: pubData, error: pubError } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(photoPath, {
+              transform: {
+                height: MAX_PHOTO_HEIGHT,
+                // Use `contain` to ensure the image is scaled down without cropping.
+                resize: 'contain',
+                quality: TRANSFORM_QUALITY,
+              },
+            });
+          if (!pubError && pubData?.publicUrl) {
+            effectiveUrl = pubData.publicUrl;
+          }
+        } catch (err) {
+          console.warn(`Failed to get transformed URL for ${photoPath}: ${err}`);
+        }
+        if (!effectiveUrl) {
+          // fallback caso a transformação falhe
+          effectiveUrl = `${baseForPhotos}/${photoPath}`;
+        }
+        
+        const photo = await loadImage(effectiveUrl);
+        // Resize image to fit within the slot dimensions without cropping.
+        const photoRaw = contain(photo, PHOTO_W, PHOTO_H);
+        // Center the resized photo within its slot (letterboxing if necessary).
+        const offsetX = slot.x + Math.floor((PHOTO_W - photoRaw.width) / 2);
+        const offsetY = slot.y + Math.floor((PHOTO_H - photoRaw.height) / 2);
+        canvas.composite(photoRaw, offsetX, offsetY);
       }
-
-      // normaliza dimensões do frame para o tamanho do canvas
-      const framesRaw = (framesRaw0.width !== CANVAS_W || framesRaw0.height !== CANVAS_H)
-        ? framesRaw0.resize(CANVAS_W, CANVAS_H)
-        : framesRaw0;
 
       const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
       const framesOverlay = punchOutEmptyFrameSlots(tintedFrames, cands.length);
@@ -321,17 +385,26 @@ serve(async (req) => {
         const barW = PHOTO_W;
         const barH = NAME_BAR_H;
 
-        // Fit text within the bar width, leaving side padding so long names don't touch edges
+        // Padding interno para não colar nas bordas
         const sidePadding = 18;
-        const maxTextW = barW - sidePadding * 2;
+        const verticalPadding = 8;
+        const maxTextW = Math.max(10, barW - sidePadding * 2);
+        const maxTextH = Math.max(10, barH - verticalPadding * 2);
+
+        // Tamanho inicial baseado na altura útil da barra (com teto),
+        // e mínimo que evita over-shrink em nomes enormes.
+        const startSize = Math.min(20, Math.floor(maxTextH * 0.95));
+        const minSize   = 10;
+
         const { img: nameImg } = await fitTextRender(
-          name,
-          maxTextW,
-          20,
-          16,
-          '#5F19DD',
-          true,
-          1
+          name,               // texto
+          maxTextW,           // largura máxima
+          startSize,          // startSize dinâmico
+          minSize,            // minSize
+          '#5F19DD',          // cor
+          true,               // bold
+          1,                  // boldStrength
+          maxTextH,           // **** altura máxima considerada ****
         );
         // HORIZONTAL CENTER: center text image inside the bar width
         const textX = barX + Math.floor((barW - nameImg.width) / 2);
@@ -341,14 +414,17 @@ serve(async (req) => {
       }
 
       const categoryName = categoryData?.name || 'Categoria';
+      const titleMaxW = CANVAS_W - 40;
+      const titleMaxH = 110;   // área útil no topo
       const { img: titleImage } = await fitTextRender(
         categoryName,
-        CANVAS_W - 40, // Maximum width with some padding
-        75,
-        65,
+        titleMaxW,
+        96,     // start
+        40,     // min
         '#fddf59',
         true,
-        1
+        1,
+        titleMaxH,
       );
       // Center the title horizontally
       const textX = Math.floor((CANVAS_W - titleImage.width) / 2);
@@ -359,10 +435,13 @@ serve(async (req) => {
       const png = await canvas.encode();
 
       // Upload to Storage
-      const { error: upErr } = await supabase.storage.from(bucket).upload(
-        outputPath,
-        new Blob([new Uint8Array(png)], { type: "image/png" }),
-        { upsert: true, contentType: "image/png" },
+      const { error: upErr } = await retry(() =>
+        supabase.storage.from(bucket).upload(
+          outputPath,
+          new Blob([new Uint8Array(png)], { type: "image/png" }),
+          { upsert: true, contentType: "image/png" },
+        ),
+        { retries: 3, baseMs: 300 }
       );
       if (upErr) throw upErr;
 
