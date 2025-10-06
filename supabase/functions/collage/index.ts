@@ -15,26 +15,26 @@ const SUPABASE_KEY =
 const DEFAULT_BUCKET = "candidates";
 
 // ---------- CANVAS / LAYOUT ----------
-// Reduced dimensions by ~40% to save CPU
-const CANVAS_W = 819; // Was 1365
-const CANVAS_H = 819; // Was 1365
+// Increased by 20% for better resolution
+const CANVAS_W = 983;
+const CANVAS_H = 983;
 
-const PHOTO_W = 136; // Was 226
-const PHOTO_H = 182; // Was 303
-const NAME_BAR_H = 35; // Was 58
+const PHOTO_W = 163;
+const PHOTO_H = 218;
+const NAME_BAR_H = 42;
 
 // Slots (top-left of the photo area; frames PNG should align visually)
-// Scaled proportionally
+// Increased by 20%
 const SLOTS = [
-  { x: 121,  y: 88 },
-  { x: 352, y: 88 },
-  { x: 581, y: 88 },
-  { x: 121,  y: 334 },
-  { x: 352, y: 334 },
-  { x: 581, y: 334 },
-  { x: 121,  y: 577 },
-  { x: 352, y: 577 },
-  { x: 581, y: 577 },
+  { x: 145,  y: 106 },
+  { x: 422, y: 106 },
+  { x: 697, y: 106 },
+  { x: 145,  y: 401 },
+  { x: 422, y: 401 },
+  { x: 697, y: 401 },
+  { x: 145,  y: 692 },
+  { x: 422, y: 692 },
+  { x: 697, y: 692 },
 ] as const;
 
 // ---------- COLOR HELPERS ----------
@@ -72,10 +72,10 @@ function recolorNonTransparent(img: Image, hex: string): Image {
 }
 
 // --- Frame masking helpers for last-page empty slots ---
-// Scaled proportionally (~60% of original)
-const FRAME_PAD_X = 14;      // horizontal pad of yellow frame beyond photo
-const FRAME_PAD_TOP = 14;    // top pad beyond photo
-const FRAME_PAD_BOTTOM = 14; // extra bottom pad (besides NAME_BAR_H)
+// Increased by 20%
+const FRAME_PAD_X = 17;      // horizontal pad of yellow frame beyond photo
+const FRAME_PAD_TOP = 17;    // top pad beyond photo
+const FRAME_PAD_BOTTOM = 17; // extra bottom pad (besides NAME_BAR_H)
 
 function frameRectForSlot(idx: number) {
   const s = SLOTS[idx];
@@ -196,8 +196,8 @@ async function fitTextRender(
 
 // Load and resize photo to reduce memory usage (simplified for performance)
 async function loadAndResizePhoto(url: string): Promise<Image> {
-  const MAX_HEIGHT = 800; // Reduced from 1024 for faster processing
-  const MAX_WIDTH = 600;
+  const MAX_HEIGHT = 960; // Increased by 20%
+  const MAX_WIDTH = 720;
   
   // Load original image
   let img = await loadImage(url);
@@ -357,20 +357,20 @@ serve(async (req) => {
 
         try {
           // Bar spans photo width (with a small visual inset from the overlay)
-          const barInsetX = 4; // Scaled down
+          const barInsetX = 5; // Increased by 20%
           const barX = slot.x + barInsetX;
-          const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 10; // Adjusted
+          const barY = slot.y + PHOTO_H - Math.floor(NAME_BAR_H * 0.9) + 12; // Increased by 20%
           const barW = PHOTO_W;
           const barH = NAME_BAR_H;
 
           // Fit text within the bar width, leaving side padding so long names don't touch edges
-          const sidePadding = 11; // Scaled down
+          const sidePadding = 13; // Increased by 20%
           const maxTextW = barW - sidePadding * 2;
           const { img: nameImg } = await fitTextRender(
             name,
             maxTextW,
-            12, // Reduced from 20
-            10, // Reduced from 16
+            14, // Increased by 20%
+            12, // Increased by 20%
             '#5F19DD',
             true,
             1
@@ -390,16 +390,16 @@ serve(async (req) => {
       try {
         const { img: titleImage } = await fitTextRender(
           categoryName,
-          CANVAS_W - 24, // Scaled padding
-          45, // Reduced from 75
-          39, // Reduced from 65
+          CANVAS_W - 29, // Increased by 20%
+          54, // Increased by 20%
+          47, // Increased by 20%
           '#fddf59',
           true,
           1
         );
         // Center the title horizontally
         const textX = Math.floor((CANVAS_W - titleImage.width) / 2);
-        const textY = 3;
+        const textY = 4;
         canvas.composite(titleImage, textX, textY);
       } catch (error) {
         console.error('Error rendering title:', error);
