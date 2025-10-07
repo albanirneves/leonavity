@@ -18,12 +18,12 @@ const NAME_BAR_H = 58;
 
 // Slots (top-left of the photo area; frames PNG should align visually)
 const SLOTS = [
-  { x: 128,  y: 176 },
-  { x: 444, y: 176 },
-  { x: 128,  y: 587 },
-  { x: 444, y: 587 },
-  { x: 128,  y: 995 },
-  { x: 444, y: 995 },
+  { x: 124,  y: 176 },
+  { x: 441, y: 176 },
+  { x: 124,  y: 587 },
+  { x: 441, y: 587 },
+  { x: 124,  y: 995 },
+  { x: 441, y: 995 },
 ] as const;
 
 // ---------- COLOR HELPERS ----------
@@ -87,6 +87,14 @@ function cover(img: Image, targetW: number, targetH: number): Image {
   const x = Math.floor((w - targetW) / 2);
   const y = Math.floor((h - targetH) / 2);
   return resized.crop(x, y, targetW, targetH);
+}
+
+// Fit an image inside the target dimensions without cropping.
+function contain(img: Image, targetW: number, targetH: number): Image {
+  const scale = Math.min(targetW / img.width, targetH / img.height);
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  return img.resize(w, h);
 }
 
 // Load the TTF from your Storage (cached)
@@ -192,8 +200,10 @@ serve(async (req) => {
 
     const candObjs = (candidates as Array<{id_candidate:number; name:string}>).map((c) => {
       const filename = `event_${id_event}_category_${id_category}_candidate_${c.id_candidate}.jpg`;
-      return { name: c.name, photoUrl: `${baseForPhotos}/${filename}` };
+      // Guardamos somente o caminho do arquivo, a URL final é gerada com transformação
+      return { name: c.name, photoPath: filename };
     });
+
     const cands = candObjs; // names provided by request body
 
     // Load base images
@@ -210,16 +220,40 @@ serve(async (req) => {
     const bg = cover(bgImgRaw, CANVAS_W, CANVAS_H);
     canvas.composite(bg, 0, 0);
 
-    // Paste photos
+    // Configuração de transformação
+    const MAX_PHOTO_HEIGHT = 1024;
+    const TRANSFORM_QUALITY = 60;
     for (let i = 0; i < cands.length; i++) {
       const slot = SLOTS[i];
-      const { photoUrl } = cands[i];
-      const photo = await loadImage(photoUrl);
-      //const cropped = cover(photo, PHOTO_W, PHOTO_H);
-      const photoRaw = (photo.width !== PHOTO_W || photo.height !== PHOTO_H)
-        ? photo.resize(PHOTO_W, PHOTO_H)
-        : photo;
-      canvas.composite(photoRaw, slot.x, slot.y);
+      const { photoPath } = cands[i];
+      let effectiveUrl: string | null = null;
+      try {
+        const { data: pubData, error: pubErr } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(photoPath, {
+            transform: {
+              height: MAX_PHOTO_HEIGHT,
+              resize: 'contain',
+              quality: TRANSFORM_QUALITY,
+            },
+          });
+        if (!pubErr && pubData?.publicUrl) {
+          effectiveUrl = pubData.publicUrl;
+        }
+      } catch (err) {
+        console.warn(`Failed to get transformed URL for ${photoPath}: ${err}`);
+      }
+      if (!effectiveUrl) {
+        // fallback para URL original
+        effectiveUrl = `${baseForPhotos}/${photoPath}`;
+      }
+      const photo = await loadImage(effectiveUrl);
+      // Ajusta a imagem para caber no slot sem corte
+      const photoRaw = contain(photo, PHOTO_W, PHOTO_H);
+      // Centraliza a foto no slot (letterboxing)
+      const offsetX = slot.x + Math.floor((PHOTO_W - photoRaw.width) / 2);
+      const offsetY = slot.y + Math.floor((PHOTO_H - photoRaw.height) / 2);
+      canvas.composite(photoRaw, offsetX, offsetY);
     }
 
     // normaliza dimensões do frame para o tamanho do canvas
