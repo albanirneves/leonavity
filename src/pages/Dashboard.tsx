@@ -57,9 +57,10 @@ interface DashboardStats {
   topCandidates: Array<{
     name: string;
     votes: number;
+    totalInvested: number;
     event: string;
     category: string;
-    photo_url?: string;        // photo avatar for Top Candidates
+    photo_url?: string;
   }>;
   weeklyMovement: Array<{
     id: string;
@@ -325,10 +326,12 @@ export default function Dashboard() {
       const candidatesWithVotes = (candidatesResult.data || []).map(candidate => {
         const key = `${candidate.id_category}_${candidate.id_candidate}`;
         const totalVotes = votesMap.get(key) || 0;
+        const totalInvested = totalVotes * Number(eventData.vote_value);
 
         return {
           name: candidate.name,
           votes: totalVotes,
+          totalInvested,
           event: 'Evento Atual',
           category: categoryNameMap.get(candidate.id_category) || `Categoria ${candidate.id_category}`,
           photo_url: `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${candidate.id_category}_candidate_${candidate.id_candidate}.jpg`,
@@ -883,8 +886,8 @@ export default function Dashboard() {
                 <div className="h-full overflow-y-auto px-6 pb-6">
                   <div className="space-y-3">
                     {stats.topCandidates.map((candidate, index) => (
-                      <div key={index} className="flex items-center justify-between border-b border-muted pb-2">
-                        <div className="flex items-center gap-3">
+                      <div key={index} className="flex items-center justify-between border-b border-muted pb-3">
+                        <div className="flex items-center gap-3 flex-1">
                           {/* Número da posição */}
                           <div className="w-6 h-6 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                             {index + 1}
@@ -900,16 +903,19 @@ export default function Dashboard() {
                               }}
                             />
                           </div>
-                          <div>
-                            <p className="font-medium">{candidate.name}</p>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{candidate.name}</p>
+                            <p className="text-sm text-muted-foreground truncate">
                               {candidate.event} • {candidate.category}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex-shrink-0 ml-2">
                           <p className="font-bold text-brand-600">{candidate.votes}</p>
                           <p className="text-xs text-muted-foreground">votos</p>
+                          <p className="font-semibold text-success-600 mt-1">
+                            {formatCurrency(candidate.totalInvested)}
+                          </p>
                         </div>
                       </div>
                     ))}
