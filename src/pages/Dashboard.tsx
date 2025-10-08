@@ -884,16 +884,17 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden p-0">
                 <div className="h-full overflow-y-auto px-6 pb-6">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {stats.topCandidates.map((candidate, index) => (
-                      <div key={index} className="flex items-center justify-between border-b border-muted pb-3">
-                        <div className="flex items-center gap-3 flex-1">
+                      <div key={index} className="border-b border-muted pb-3 last:border-0">
+                        <div className="flex items-start gap-3">
                           {/* Número da posição */}
-                          <div className="w-6 h-6 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                          <div className="w-6 h-6 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-1">
                             {index + 1}
                           </div>
+                          
                           {/* Avatar da candidata */}
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-muted flex-shrink-0">
                             <img
                               src={candidate.photo_url || '/placeholder.svg'}
                               alt={candidate.name}
@@ -903,19 +904,28 @@ export default function Dashboard() {
                               }}
                             />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{candidate.name}</p>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {candidate.event} • {candidate.category}
+                          
+                          {/* Informações da candidata */}
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <p className="font-medium text-sm md:text-base">{candidate.name}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">
+                              {candidate.category}
                             </p>
+                            
+                            {/* Votos e valor - empilhados em mobile, lado a lado em desktop */}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pt-1">
+                              <div className="flex items-baseline gap-1">
+                                <span className="font-bold text-brand-600 text-lg">{candidate.votes}</span>
+                                <span className="text-xs text-muted-foreground">votos</span>
+                              </div>
+                              <div className="flex items-baseline gap-1">
+                                <span className="font-semibold text-success-600 text-base">
+                                  {formatCurrency(candidate.totalInvested)}
+                                </span>
+                                <span className="text-xs text-muted-foreground">investido</span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          <p className="font-bold text-brand-600">{candidate.votes}</p>
-                          <p className="text-xs text-muted-foreground">votos</p>
-                          <p className="font-semibold text-success-600 mt-1">
-                            {formatCurrency(candidate.totalInvested)}
-                          </p>
                         </div>
                       </div>
                     ))}
