@@ -558,24 +558,31 @@ export default function Dashboard() {
   };
 
   const formatRelativeTime = (dateString: string) => {
-    const now = new Date();
     const date = new Date(dateString);
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    const today = new Date();
     
-    if (diffInMinutes < 1) return 'agora';
-    if (diffInMinutes < 60) return `${diffInMinutes} minuto${diffInMinutes > 1 ? 's' : ''} atrás`;
+    // Zera as horas para comparar apenas a data
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const voteDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hora${diffInHours > 1 ? 's' : ''} atrás`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return 'ontem';
-    if (diffInDays < 7) {
-      const dayNames = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
-      return dayNames[date.getDay()];
+    // Se foi hoje, mostra apenas HH:mm:ss
+    if (todayDate.getTime() === voteDate.getTime()) {
+      return date.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      });
     }
     
-    return formatDate(dateString);
+    // Se foi ontem ou antes, mostra DD/MM/YYYY HH:mm:ss
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   };
 
   const formatPhone = (phone: string) => {
