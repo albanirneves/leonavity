@@ -283,51 +283,61 @@ export default function Dashboard() {
         });
       }
 
-      // 4. Buscar top candidatas do evento
-      const { data: candidatesData, error: candidatesError } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('id_event', eventId);
+      // 4. Buscar candidatas e categorias do evento
+      const [candidatesResult, categoriesResult] = await Promise.all([
+        supabase
+          .from('candidates')
+          .select('id_candidate, id_category, name')
+          .eq('id_event', eventId),
+        supabase
+          .from('categories')
+          .select('id_category, name')
+          .eq('id_event', eventId)
+          .order('id_category', { ascending: true })
+      ]);
 
-      if (candidatesError) throw candidatesError;
+      if (candidatesResult.error) throw candidatesResult.error;
+      if (categoriesResult.error) throw categoriesResult.error;
 
-      // Buscar categorias para mapear id -> nome de categoria
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('id_category, name')
-        .eq('id_event', eventId)
-        .order('id_category', { ascending: true });
-      if (categoriesError) throw categoriesError;
       const categoryNameMap = new Map<number, string>(
-        (categoriesData || []).map((c) => [c.id_category, c.name])
+        (categoriesResult.data || []).map((c) => [c.id_category, c.name])
       );
 
-      // Calcular votos por candidata
-      const candidatesWithVotes = await Promise.all(
-        (candidatesData || []).map(async (candidate) => {
-          const { data: votesData } = await supabase
-            .from('votes')
-            .select('votes')
-            .eq('id_event', candidate.id_event)
-            .eq('id_category', candidate.id_category)
-            .eq('id_candidate', candidate.id_candidate)
-            .eq('payment_status', 'approved')
-            .range(0, 999999);
+      // Buscar TODOS os votos aprovados do evento de uma vez só
+      const { data: allApprovedVotes, error: allVotesError } = await supabase
+        .from('votes')
+        .select('id_candidate, id_category, votes')
+        .eq('id_event', eventId)
+        .eq('payment_status', 'approved')
+        .range(0, 999999);
 
-          const totalVotes = votesData?.reduce((sum, vote) => sum + (Number(vote.votes) || 0), 0) || 0;
+      if (allVotesError) throw allVotesError;
 
-          return {
-            name: candidate.name,
-            votes: totalVotes,
-            event: 'Evento Atual',
-            category: categoryNameMap.get(candidate.id_category) || `Categoria ${candidate.id_category}`,
-            photo_url: `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${candidate.id_category}_candidate_${candidate.id_candidate}.jpg`,
-            //category: `Categoria ${candidate.id_category}`
-          };
-        })
-      );
+      // Criar um mapa de votos por candidata (chave: "category_candidate")
+      const votesMap = new Map<string, number>();
+      (allApprovedVotes || []).forEach(vote => {
+        const key = `${vote.id_category}_${vote.id_candidate}`;
+        const current = votesMap.get(key) || 0;
+        votesMap.set(key, current + (Number(vote.votes) || 0));
+      });
 
-      // Ordenar por votos (todas as candidatas)
+      // Calcular votos para cada candidata usando o mapa
+      const candidatesWithVotes = (candidatesResult.data || []).map(candidate => {
+        const key = `${candidate.id_category}_${candidate.id_candidate}`;
+        const totalVotes = votesMap.get(key) || 0;
+
+        return {
+          name: candidate.name,
+          votes: totalVotes,
+          event: 'Evento Atual',
+          category: categoryNameMap.get(candidate.id_category) || `Categoria ${candidate.id_category}`,
+          photo_url: `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${candidate.id_category}_candidate_${candidate.id_candidate}.jpg`,
+          id_candidate: candidate.id_candidate,
+          id_category: candidate.id_category
+        };
+      });
+
+      // Ordenar por votos
       const topCandidates = candidatesWithVotes
         .sort((a, b) => b.votes - a.votes);
 
@@ -358,33 +368,32 @@ export default function Dashboard() {
         .order('created_at', { ascending: false })
         .range(0, 999999);
 
-      // Enriquecer dados dos votos com informações das candidatas
-      const weeklyMovement = await Promise.all(
-        (weeklyVotes || []).map(async (vote) => {
-          const { data: candidateData } = await supabase
-            .from('candidates')
-            .select('name')
-            .eq('id_event', eventId)
-            .eq('id_category', vote.id_category)
-            .eq('id_candidate', vote.id_candidate)
-            .single();
-
-          const candidate_photo = `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${vote.id_category}_candidate_${vote.id_candidate}.jpg`;
-
-          return {
-            id: vote.id.toString(),
-            phone: vote.phone,
-            votes: vote.votes,
-            created_at: vote.created_at,
-            candidate_name: candidateData?.name || `Candidata ${vote.id_candidate}`,
-            candidate_photo,
-            category_name: categoryNameMap.get(vote.id_category) || `Categoria ${vote.id_category}`,
-          };
-        })
+      // Criar mapa de candidatas para enriquecimento rápido
+      const candidatesMap = new Map(
+        (candidatesResult.data || []).map(c => [
+          `${c.id_category}_${c.id_candidate}`,
+          c.name
+        ])
       );
 
+      // Enriquecer dados dos votos com informações das candidatas (sem queries adicionais)
+      const weeklyMovement = (weeklyVotes || []).map(vote => {
+        const key = `${vote.id_category}_${vote.id_candidate}`;
+        const candidate_photo = `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${vote.id_category}_candidate_${vote.id_candidate}.jpg`;
+
+        return {
+          id: vote.id.toString(),
+          phone: vote.phone,
+          votes: vote.votes,
+          created_at: vote.created_at,
+          candidate_name: candidatesMap.get(key) || `Candidata ${vote.id_candidate}`,
+          candidate_photo,
+          category_name: categoryNameMap.get(vote.id_category) || `Categoria ${vote.id_category}`,
+        };
+      });
+
       // 6. Buscar total de candidatas do evento
-      const totalCandidates = candidatesData?.length || 0;
+      const totalCandidates = candidatesResult.data?.length || 0;
 
       // 7. Gerar dados para gráficos baseados nas datas do evento
       const { data: currentEventData } = await supabase
@@ -444,50 +453,25 @@ export default function Dashboard() {
         });
       }
 
-      const categoryRankings = await Promise.all(
-        (categoriesData || []).map(async (category) => {
-          const { data: categoryCandiates } = await supabase
-            .from('candidates')
-            .select('id_candidate, name')
-            .eq('id_event', eventId)
-            .eq('id_category', category.id_category);
+      // Criar rankings por categoria usando os dados já carregados
+      const categoryRankings = (categoriesResult.data || []).map(category => {
+        // Filtrar candidatas desta categoria
+        const categoryCandidates = candidatesWithVotes
+          .filter(c => c.id_category === category.id_category)
+          .sort((a, b) => b.votes - a.votes)
+          .slice(0, 5)
+          .map(c => ({
+            name: c.name,
+            votes: c.votes,
+            photo_url: c.photo_url,
+            id_candidate: c.id_candidate
+          }));
 
-          const candidatesWithVotes = await Promise.all(
-            (categoryCandiates || []).map(async (candidate) => {
-              const { data: votesData } = await supabase
-                .from('votes')
-                .select('votes')
-                .eq('id_event', eventId)
-                .eq('id_category', category.id_category)
-                .eq('id_candidate', candidate.id_candidate)
-                .eq('payment_status', 'approved')
-                .range(0, 999999);
-
-              const totalVotes = votesData?.reduce((sum, vote) => sum + (Number(vote.votes) || 0), 0) || 0;
-
-              // Generate photo URL from storage with correct format
-              const photo_url = `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${category.id_category}_candidate_${candidate.id_candidate}.jpg`;
-
-              return {
-                name: candidate.name,
-                votes: totalVotes,
-                photo_url,
-                id_candidate: candidate.id_candidate
-              };
-            })
-          );
-
-          // Sort by votes and take top 5
-          const topCandidates = candidatesWithVotes
-            .sort((a, b) => b.votes - a.votes)
-            .slice(0, 5);
-
-          return {
-            categoryName: category.name,
-            candidates: topCandidates
-          };
-        })
-      );
+        return {
+          categoryName: category.name,
+          candidates: categoryCandidates
+        };
+      });
 
       setStats({
         votesActive: votesActiveCount,
