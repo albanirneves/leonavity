@@ -567,22 +567,30 @@ export default function Dashboard() {
     
     // Se foi hoje, mostra apenas HH:mm:ss
     if (todayDate.getTime() === voteDate.getTime()) {
-      return date.toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit' 
-      });
+      return {
+        isToday: true,
+        time: date.toLocaleTimeString('pt-BR', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit' 
+        })
+      };
     }
     
-    // Se foi ontem ou antes, mostra DD/MM/YYYY HH:mm:ss
-    return date.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
+    // Se foi ontem ou antes, mostra DD/MM/YYYY e HH:mm:ss separados
+    return {
+      isToday: false,
+      date: date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }),
+      time: date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    };
   };
 
   const formatPhone = (phone: string) => {
@@ -866,9 +874,20 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-xs text-muted-foreground leading-tight">
-                              {formatRelativeTime(vote.created_at)}
-                            </p>
+                            <div className="text-xs text-muted-foreground leading-tight">
+                              {(() => {
+                                const formatted = formatRelativeTime(vote.created_at);
+                                if (formatted.isToday) {
+                                  return <span>{formatted.time}</span>;
+                                }
+                                return (
+                                  <div className="flex flex-col items-end">
+                                    <span>{formatted.date}</span>
+                                    <span>{formatted.time}</span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           </div>
                         </div>
                       ))
