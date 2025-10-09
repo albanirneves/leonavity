@@ -134,7 +134,7 @@ export function VotesByDayChart({ data }: VotesByDayChartProps) {
 
         {/* Sparkline */}
         {stats.hasMovement && (
-          <div className="h-16">
+          <div className="h-20 bg-muted/30 rounded-lg p-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={filteredData}>
                 <Tooltip content={<CustomTooltip />} />

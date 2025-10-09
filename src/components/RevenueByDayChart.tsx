@@ -143,7 +143,7 @@ export function RevenueByDayChart({ data }: RevenueByDayChartProps) {
 
         {/* Sparkline */}
         {stats.hasMovement && (
-          <div className="h-16">
+          <div className="h-20 bg-muted/30 rounded-lg p-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={filteredData}>
                 <Tooltip content={<CustomTooltip />} />
@@ -151,7 +151,7 @@ export function RevenueByDayChart({ data }: RevenueByDayChartProps) {
                   type="monotone" 
                   dataKey="revenue" 
                   stroke="hsl(var(--brand))" 
-                  strokeWidth={2}
+                  strokeWidth={3}
                   dot={false}
                 />
               </LineChart>
