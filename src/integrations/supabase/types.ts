@@ -126,6 +126,7 @@ export type Database = {
           card_tax: number | null
           created_at: string
           end_vote: string
+          highlight_first_place: boolean
           id: number
           id_account: number
           layout_color: string | null
@@ -140,6 +141,7 @@ export type Database = {
           card_tax?: number | null
           created_at?: string
           end_vote: string
+          highlight_first_place?: boolean
           id?: number
           id_account: number
           layout_color?: string | null
@@ -154,6 +156,7 @@ export type Database = {
           card_tax?: number | null
           created_at?: string
           end_vote?: string
+          highlight_first_place?: boolean
           id?: number
           id_account?: number
           layout_color?: string | null
