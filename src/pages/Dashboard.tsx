@@ -1208,17 +1208,17 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2 pr-2">
                 {candidateVotes.map((vote) => (
-                  <div key={vote.id} className="flex items-center justify-between border-b border-muted pb-2 last:border-0">
+                  <div key={vote.id} className="flex items-start justify-between border-b border-muted pb-2 last:border-0 gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">{vote.votes} voto{vote.votes > 1 ? 's' : ''}</span>
+                      <div className="font-medium text-foreground">
+                        {vote.votes} voto{vote.votes > 1 ? 's' : ''}
                       </div>
                       <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                        {vote.id}
+                        {formatPhone(vote.phone)}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-xs text-muted-foreground leading-tight">
+                      <div className="text-xs text-muted-foreground leading-tight whitespace-nowrap">
                         {(() => {
                           const formatted = formatRelativeTime(vote.created_at);
                           if (formatted.isToday) {
