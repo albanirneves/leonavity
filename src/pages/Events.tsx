@@ -214,6 +214,7 @@ Bem vindo ao evento!
 Vamos iniciar seu voto:`;
 
     const {
+      data: newEvent,
       error
     } = await supabase.from('events').insert([{
       name: eventForm.name,
@@ -225,22 +226,51 @@ Vamos iniciar seu voto:`;
       pix_tax: eventForm.pix_tax ? parseFloat(eventForm.pix_tax) : 0,
       card_tax: eventForm.card_tax ? parseFloat(eventForm.card_tax) : 0,
       msg_saudacao: defaultMessage
-    }]);
+    }]).select();
+    
     if (error) {
       toast({
         title: 'Erro',
         description: 'Erro ao criar evento',
         variant: 'destructive'
       });
-    } else {
-      toast({
-        title: 'Sucesso',
-        description: 'Evento criado com sucesso'
-      });
-      setIsEventDialogOpen(false);
-      resetEventForm();
-      fetchEvents();
+      return;
     }
+
+    // Copiar banner de parciais do evento 1 para o novo evento
+    if (newEvent && newEvent[0]) {
+      const newEventId = newEvent[0].id;
+      
+      try {
+        // Buscar o banner do evento 1
+        const { data: sourceFile } = await supabase.storage
+          .from('qr')
+          .download('assets/background_categories_event_1.png');
+        
+        if (sourceFile) {
+          // Upload do banner para o novo evento
+          await supabase.storage
+            .from('qr')
+            .upload(`assets/background_categories_event_${newEventId}.png`, sourceFile, {
+              contentType: 'image/png',
+              upsert: true
+            });
+          
+          console.log(`Banner de parciais copiado do evento 1 para evento ${newEventId}`);
+        }
+      } catch (storageError) {
+        console.error('Erro ao copiar banner de parciais:', storageError);
+        // Não mostra erro ao usuário pois o evento foi criado com sucesso
+      }
+    }
+
+    toast({
+      title: 'Sucesso',
+      description: 'Evento criado com sucesso'
+    });
+    setIsEventDialogOpen(false);
+    resetEventForm();
+    fetchEvents();
   };
   const handleUpdateEvent = async () => {
     if (!selectedEventForEdit) return;
