@@ -1168,7 +1168,7 @@ export default function Dashboard() {
 
       {/* Modal de votos da candidata */}
       <Dialog open={selectedCandidate !== null} onOpenChange={(open) => !open && setSelectedCandidate(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               {selectedCandidate && (
@@ -1185,8 +1185,11 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <div className="font-semibold">{selectedCandidate.name}</div>
-                    <div className="text-sm text-muted-foreground font-normal">
-                      Todos os votos recebidos
+                    <div className="text-sm text-muted-foreground font-normal flex items-center gap-2">
+                      <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full">
+                        {candidateVotes.length > 0 ? candidateVotes[0].category_name : ''}
+                      </span>
+                      <span>Todos os votos recebidos</span>
                     </div>
                   </div>
                 </>
@@ -1203,35 +1206,17 @@ export default function Dashboard() {
                 Nenhum voto encontrado
               </div>
             ) : (
-              <div className="space-y-4 pr-2">
+              <div className="space-y-3 pr-2">
                 {candidateVotes.map((vote) => (
-                  <div key={vote.id} className="flex items-start gap-3 border-b border-muted pb-4 last:border-0">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                      <img
-                        src={selectedCandidate?.photo_url || '/placeholder.svg'}
-                        alt={selectedCandidate?.name || ''}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                    </div>
+                  <div key={vote.id} className="flex items-center justify-between border-b border-muted pb-3 last:border-0">
                     <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <p className="font-medium text-sm md:text-base leading-tight">
-                          {selectedCandidate?.name}
-                        </p>
-                        <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full w-fit">
-                          {vote.category_name}
-                        </span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs md:text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="font-mono">{formatPhone(vote.phone)}</span>
-                        <span className="hidden sm:inline">•</span>
-                        <span>{vote.votes} voto{vote.votes > 1 ? 's' : ''}</span>
+                        <span>•</span>
+                        <span className="font-medium text-foreground">{vote.votes} voto{vote.votes > 1 ? 's' : ''}</span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right flex-shrink-0 ml-3">
                       <div className="text-xs text-muted-foreground leading-tight">
                         {(() => {
                           const formatted = formatRelativeTime(vote.created_at);
