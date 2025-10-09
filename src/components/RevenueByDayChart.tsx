@@ -26,11 +26,16 @@ export function RevenueByDayChart({ data }: RevenueByDayChartProps) {
 
   const filteredData = useMemo(() => {
     const days = periodDays[period];
-    console.log('RevenueByDayChart - data:', data);
-    console.log('RevenueByDayChart - period:', period, 'days:', days);
-    const result = data.slice(-days);
-    console.log('RevenueByDayChart - filteredData:', result);
-    return result;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Filtrar dados até hoje e pegar os últimos X dias
+    const dataUntilToday = data.filter(d => {
+      const itemDate = new Date(d.date);
+      return itemDate <= today;
+    });
+    
+    return dataUntilToday.slice(-days);
   }, [data, period]);
 
   const stats = useMemo(() => {

@@ -26,11 +26,16 @@ export function VotesByDayChart({ data }: VotesByDayChartProps) {
 
   const filteredData = useMemo(() => {
     const days = periodDays[period];
-    console.log('VotesByDayChart - data:', data);
-    console.log('VotesByDayChart - period:', period, 'days:', days);
-    const result = data.slice(-days);
-    console.log('VotesByDayChart - filteredData:', result);
-    return result;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Filtrar dados até hoje e pegar os últimos X dias
+    const dataUntilToday = data.filter(d => {
+      const itemDate = new Date(d.date);
+      return itemDate <= today;
+    });
+    
+    return dataUntilToday.slice(-days);
   }, [data, period]);
 
   const stats = useMemo(() => {
