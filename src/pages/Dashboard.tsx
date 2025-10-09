@@ -58,6 +58,7 @@ interface DashboardStats {
     name: string;
     votes: number;
     totalInvested: number;
+    netRevenue: number;
     event: string;
     category: string;
     photo_url?: string;
@@ -320,34 +321,53 @@ export default function Dashboard() {
         (categoriesResult.data || []).map((c) => [c.id_category, c.name])
       );
 
-      // Buscar TODOS os votos aprovados do evento de uma vez só
+      // Buscar TODOS os votos aprovados do evento de uma vez só (incluindo changed_to_card para calcular taxas)
       const { data: allApprovedVotes, error: allVotesError } = await supabase
         .from('votes')
-        .select('id_candidate, id_category, votes')
+        .select('id_candidate, id_category, votes, changed_to_card')
         .eq('id_event', eventId)
         .eq('payment_status', 'approved')
         .range(0, 999999);
 
       if (allVotesError) throw allVotesError;
 
-      // Criar um mapa de votos por candidata (chave: "category_candidate")
+      // Criar mapas de votos e valor investido (com taxas) por candidata
       const votesMap = new Map<string, number>();
+      const investedMap = new Map<string, number>();
+      const netRevenueMap = new Map<string, number>();
+      
       (allApprovedVotes || []).forEach(vote => {
         const key = `${vote.id_category}_${vote.id_candidate}`;
-        const current = votesMap.get(key) || 0;
-        votesMap.set(key, current + (Number(vote.votes) || 0));
+        const voteCount = Number(vote.votes) || 0;
+        const baseValue = voteCount * Number(eventData.vote_value);
+        
+        // Somar votos
+        const currentVotes = votesMap.get(key) || 0;
+        votesMap.set(key, currentVotes + voteCount);
+        
+        // Somar valor líquido (sem taxas)
+        const currentNet = netRevenueMap.get(key) || 0;
+        netRevenueMap.set(key, currentNet + baseValue);
+        
+        // Somar valor investido (com taxas)
+        const currentInvested = investedMap.get(key) || 0;
+        const tax = vote.changed_to_card ? Number(eventData.card_tax) : Number(eventData.pix_tax);
+        const grossValue = baseValue * (100 + tax) / 100;
+        investedMap.set(key, currentInvested + grossValue);
       });
 
-      // Calcular votos para cada candidata usando o mapa
+      // Calcular votos para cada candidata usando os mapas
       const candidatesWithVotes = (candidatesResult.data || []).map(candidate => {
         const key = `${candidate.id_category}_${candidate.id_candidate}`;
         const totalVotes = votesMap.get(key) || 0;
-        const totalInvested = totalVotes * Number(eventData.vote_value);
+        const totalInvested = investedMap.get(key) || 0;
+        const netRevenue = netRevenueMap.get(key) || 0;
 
         return {
           name: candidate.name,
           votes: totalVotes,
           totalInvested,
+          netRevenue,
           event: 'Evento Atual',
           category: categoryNameMap.get(candidate.id_category) || `Categoria ${candidate.id_category}`,
           photo_url: `https://waslpdqekbwxptwgpjze.supabase.co/storage/v1/object/public/candidates/event_${eventId}_category_${candidate.id_category}_candidate_${candidate.id_candidate}.jpg`,
@@ -1011,21 +1031,30 @@ export default function Dashboard() {
                           {/* Informações da candidata */}
                           <div className="flex-1 min-w-0 space-y-1">
                             <p className="font-medium text-sm md:text-base">{candidate.name}</p>
-                            <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">
-                              {candidate.category}
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              👑 {candidate.category}
                             </p>
+                            <p className="text-sm font-bold text-brand-600">{candidate.votes} votos</p>
                             
-                            {/* Votos e valor - empilhados em mobile, lado a lado em desktop */}
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pt-1">
-                              <div className="flex items-baseline gap-1">
-                                <span className="font-bold text-brand-600 text-lg">{candidate.votes}</span>
-                                <span className="text-xs text-muted-foreground">votos</span>
-                              </div>
-                              <div className="flex items-baseline gap-1">
-                                <span className="font-semibold text-success-600 text-base">
+                            {/* Informações financeiras */}
+                            <div className="space-y-0.5 pt-2 text-xs">
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Valor investido:</span>
+                                <span className="font-semibold text-success-600">
                                   {formatCurrency(candidate.totalInvested)}
                                 </span>
-                                <span className="text-xs text-muted-foreground">investido</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Valor líquido:</span>
+                                <span className="font-semibold">
+                                  {formatCurrency(candidate.netRevenue || 0)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Taxas:</span>
+                                <span className="font-semibold text-warning-600">
+                                  {formatCurrency((candidate.totalInvested || 0) - (candidate.netRevenue || 0))}
+                                </span>
                               </div>
                             </div>
                           </div>
