@@ -1206,17 +1206,18 @@ export default function Dashboard() {
                 Nenhum voto encontrado
               </div>
             ) : (
-              <div className="space-y-3 pr-2">
+              <div className="space-y-2 pr-2">
                 {candidateVotes.map((vote) => (
-                  <div key={vote.id} className="flex items-center justify-between border-b border-muted pb-3 last:border-0">
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="font-mono">{formatPhone(vote.phone)}</span>
-                        <span>•</span>
+                  <div key={vote.id} className="flex items-center justify-between border-b border-muted pb-2 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
                         <span className="font-medium text-foreground">{vote.votes} voto{vote.votes > 1 ? 's' : ''}</span>
                       </div>
+                      <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                        {vote.id}
+                      </div>
                     </div>
-                    <div className="text-right flex-shrink-0 ml-3">
+                    <div className="text-right flex-shrink-0">
                       <div className="text-xs text-muted-foreground leading-tight">
                         {(() => {
                           const formatted = formatRelativeTime(vote.created_at);
