@@ -244,13 +244,13 @@ Vamos iniciar seu voto:`;
       try {
         // Buscar o banner do evento 1
         const { data: sourceFile } = await supabase.storage
-          .from('qr')
+          .from('candidates')
           .download('assets/background_categories_event_1.png');
         
         if (sourceFile) {
           // Upload do banner para o novo evento
           await supabase.storage
-            .from('qr')
+            .from('candidates')
             .upload(`assets/background_categories_event_${newEventId}.png`, sourceFile, {
               contentType: 'image/png',
               upsert: true
