@@ -19,17 +19,8 @@ import {
   Search,
   History
 } from 'lucide-react';
-import { 
-  LineChart, 
-  Line, 
-  BarChart,
-  Bar,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from 'recharts';
+import { RevenueByDayChart } from '@/components/RevenueByDayChart';
+import { VotesByDayChart } from '@/components/VotesByDayChart';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -1068,82 +1059,9 @@ export default function Dashboard() {
           </div>
 
           {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Revenue Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Faturamento por Dia
-                </CardTitle>
-                <CardDescription>
-                  Receita diária durante o período do evento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={stats.revenueChart}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(date) => new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => formatCurrency(value)}
-                      />
-                      <Tooltip 
-                        labelFormatter={(date) => new Date(date).toLocaleDateString('pt-BR')}
-                        formatter={(value) => [formatCurrency(Number(value)), 'Faturamento']}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="revenue" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={2}
-                        dot={{ fill: 'hsl(var(--primary))' }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Votes Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Vote className="h-5 w-5" />
-                  Votos por Dia
-                </CardTitle>
-                <CardDescription>
-                  Total de votos aprovados por dia
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.votesChart}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(date) => new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                      />
-                      <YAxis />
-                      <Tooltip 
-                        labelFormatter={(date) => new Date(date).toLocaleDateString('pt-BR')}
-                        formatter={(value) => [value, 'Votos']}
-                      />
-                      <Bar 
-                        dataKey="votes" 
-                        fill="hsl(var(--success))" 
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="space-y-6">
+            <RevenueByDayChart data={stats.revenueChart} />
+            <VotesByDayChart data={stats.votesChart} />
           </div>
 
           {/* Category Rankings */}
