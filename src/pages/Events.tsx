@@ -34,6 +34,7 @@ interface Event {
   send_ranking?: ScheduleItem[] | null;
   msg_saudacao?: string;
   layout_color?: string;
+  highlight_first_place?: boolean;
 }
 interface Account {
   id: number;
@@ -709,16 +710,17 @@ Boa sorte❣️`;
   };
 
   const checkBackgroundImageCategories = async (eventId: number) => {
-    const imagePath = `assets/background_categories_event_${eventId}.png`;
+    const imagePath = `assets/background_highlight_event_${eventId}.png`;
     const {
       data
     } = await supabase.storage.from('candidates').getPublicUrl(imagePath);
 
-    // Check if the image actually exists by trying to fetch it
+    // Check if the image actually exists by trying to fetch it with cache busting
     try {
-      const response = await fetch(data.publicUrl);
+      const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`;
+      const response = await fetch(cacheBustedUrl);
       if (response.ok) {
-        setBackgroundImageCategoriesUrl(data.publicUrl);
+        setBackgroundImageCategoriesUrl(cacheBustedUrl);
       } else {
         setBackgroundImageCategoriesUrl(null);
       }
@@ -774,27 +776,29 @@ Boa sorte❣️`;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
       const img = new Image();
-      img.onload = () => {
-        // Square format: 1:1 aspect ratio
-        const targetSize = 1080;
-        canvas.width = targetSize;
-        canvas.height = targetSize;
+      img.onload = async () => {
+        // 6:9 aspect ratio with max height of 500px
+        const maxHeight = 500;
+        const targetWidth = Math.round(maxHeight * (6/9)); // 6:9 = 0.6667
+        const targetHeight = maxHeight;
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
 
         // Calculate scaling to cover the entire canvas
-        const scale = targetSize / Math.max(img.width, img.height);
+        const scaleX = targetWidth / img.width;
+        const scaleY = targetHeight / img.height;
+        const scale = Math.max(scaleX, scaleY);
         const scaledWidth = img.width * scale;
         const scaledHeight = img.height * scale;
 
         // Center the image
-        const x = (targetSize - scaledWidth) / 2;
-        const y = (targetSize - scaledHeight) / 2;
-
-        // Fill background with white
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, targetSize, targetSize);
+        const x = (targetWidth - scaledWidth) / 2;
+        const y = (targetHeight - scaledHeight) / 2;
 
         // Draw the image
         ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+        
         canvas.toBlob(blob => {
           if (blob) {
             const resizedFile = new File([blob], file.name, {
@@ -899,9 +903,9 @@ Boa sorte❣️`;
     }
     setIsUploadingImageCategories(true);
     try {
-      // Resize image to square format (1:1)
+      // Resize image to 6:9 format
       const resizedFile = await resizeImageToSquareFormat(file);
-      const imagePath = `assets/background_categories_event_${selectedEventForParciais.id}.png`;
+      const imagePath = `assets/background_highlight_event_${selectedEventForParciais.id}.png`;
 
       // Upload to Supabase Storage
       const {
@@ -924,7 +928,7 @@ Boa sorte❣️`;
       setBackgroundImageCategoriesUrl(cacheBustedUrl);
       toast({
         title: 'Sucesso',
-        description: 'Background Categorias atualizado com sucesso'
+        description: 'Moldura Primeiro Lugar atualizada com sucesso'
       });
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -944,7 +948,7 @@ Boa sorte❣️`;
 
   const handleRemoveBackgroundImageCategories = async () => {
     if (!selectedEventForParciais) return;
-    const imagePath = `assets/background_categories_event_${selectedEventForParciais.id}.png`;
+    const imagePath = `assets/background_highlight_event_${selectedEventForParciais.id}.png`;
     try {
       const {
         error
@@ -953,7 +957,7 @@ Boa sorte❣️`;
       setBackgroundImageCategoriesUrl(null);
       toast({
         title: 'Sucesso',
-        description: 'Background Categorias removido com sucesso'
+        description: 'Moldura Primeiro Lugar removida com sucesso'
       });
     } catch (error) {
       console.error('Error removing image:', error);
@@ -993,6 +997,39 @@ Boa sorte❣️`;
       toast({
         title: 'Erro',
         description: 'Erro ao atualizar a cor do layout',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleHighlightFirstPlaceChange = async (checked: boolean) => {
+    if (!selectedEventForParciais) return;
+    try {
+      const { error } = await supabase.from('events').update({
+        highlight_first_place: checked
+      }).eq('id', selectedEventForParciais.id);
+      
+      if (error) throw error;
+      
+      setSelectedEventForParciais({
+        ...selectedEventForParciais,
+        highlight_first_place: checked
+      });
+      
+      setEvents(prev => prev.map(event => event.id === selectedEventForParciais.id ? {
+        ...event,
+        highlight_first_place: checked
+      } : event));
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Configuração atualizada com sucesso'
+      });
+    } catch (error) {
+      console.error('Error updating highlight_first_place:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar a configuração',
         variant: 'destructive'
       });
     }
@@ -1414,11 +1451,11 @@ Boa sorte❣️`;
           <div className="space-y-6 overflow-y-auto max-h-[calc(85vh-8rem)] pr-2">
             {/* Background Images Section */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Background Categorias */}
+              {/* Moldura Primeiro Lugar */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-medium">Background Categorias</Label>
-                  <div className="text-sm text-muted-foreground">1:1</div>
+                  <Label className="text-base font-medium">Moldura Primeiro Lugar</Label>
+                  <div className="text-sm text-muted-foreground">9:6</div>
                 </div>
                 
                 <div className="flex flex-col gap-4">
@@ -1440,8 +1477,8 @@ Boa sorte❣️`;
                     </div>}
                   
                   {/* Image Preview */}
-                  {backgroundImageCategoriesUrl && <div className="w-20 h-20 border rounded-lg overflow-hidden bg-gray-100 mx-auto">
-                      <img src={backgroundImageCategoriesUrl} alt="Background Categorias" className="w-full h-full object-cover" />
+                  {backgroundImageCategoriesUrl && <div className="w-20 h-32 border rounded-lg overflow-hidden bg-gray-100 mx-auto">
+                      <img src={backgroundImageCategoriesUrl} alt="Moldura Primeiro Lugar" className="w-full h-full object-cover" />
                     </div>}
                 </div>
               </div>
@@ -1479,90 +1516,36 @@ Boa sorte❣️`;
               </div>
             </div>
 
-            {/* Layout Color Section */}
-            <div className="space-y-2">
-              <Label className="text-base font-medium">Cor do Layout</Label>
-              <div className="flex items-center gap-2">
-                <input type="color" value={tempLayoutColor} onChange={e => setTempLayoutColor(e.target.value)} className="w-12 h-10 border rounded cursor-pointer" />
-                <Input type="text" value={tempLayoutColor} onChange={e => {
-                const value = e.target.value;
-                // Validate hex color format
-                if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
-                  setTempLayoutColor(value);
-                }
-              }} placeholder="#000000" className="w-24 font-mono text-sm" maxLength={7} />
-                <Button variant="outline" size="sm" onClick={handleLayoutColorChange}>
-                  Salvar Cor
-                </Button>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="border-t" />
-            
-            {/* Scheduling Section */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">Horários de Envio</Label>
-              
-              {/* Add new schedule form */}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Label htmlFor="weekday">Dia da Semana</Label>
-                  <Select value={newScheduleWeekday.toString()} onValueChange={value => setNewScheduleWeekday(parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar dia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Domingo</SelectItem>
-                      <SelectItem value="1">Segunda-feira</SelectItem>
-                      <SelectItem value="2">Terça-feira</SelectItem>
-                      <SelectItem value="3">Quarta-feira</SelectItem>
-                      <SelectItem value="4">Quinta-feira</SelectItem>
-                      <SelectItem value="5">Sexta-feira</SelectItem>
-                      <SelectItem value="6">Sábado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex-1">
-                  <Label htmlFor="hour">Horário</Label>
-                  <Select value={newScheduleHour} onValueChange={setNewScheduleHour}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a hora" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({
-                      length: 24
-                    }, (_, i) => {
-                      const hour = i.toString().padStart(2, '0');
-                      return <SelectItem key={hour} value={`${hour}:00`}>
-                            {hour}:00
-                          </SelectItem>;
-                    })}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAddSchedule}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              {/* Schedule list */}
+            {/* Layout Color and Highlight First Place Section */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                {scheduleItems && scheduleItems.length > 0 ? scheduleItems.map((schedule, index) => <div key={index} className="flex justify-between items-center p-3 border rounded">
-                      <span>
-                        {getWeekdayName(schedule.weekday)} - {schedule.hour}
-                      </span>
-                      <div className="flex gap-1">
-                        <Button variant="outline" size="sm" onClick={() => openMessageDialog(schedule)} title="Editar mensagem">
-                          <MessageSquare className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleRemoveSchedule(schedule, index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>) : <p className="text-muted-foreground text-center py-4">
-                    Nenhum horário configurado
-                  </p>}
+                <Label className="text-base font-medium">Destacar Primeiro Lugar</Label>
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    checked={selectedEventForParciais?.highlight_first_place || false}
+                    onCheckedChange={handleHighlightFirstPlaceChange}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {selectedEventForParciais?.highlight_first_place ? 'Ativado' : 'Desativado'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Cor do Layout</Label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={tempLayoutColor} onChange={e => setTempLayoutColor(e.target.value)} className="w-12 h-10 border rounded cursor-pointer" />
+                  <Input type="text" value={tempLayoutColor} onChange={e => {
+                  const value = e.target.value;
+                  // Validate hex color format
+                  if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
+                    setTempLayoutColor(value);
+                  }
+                }} placeholder="#000000" className="w-24 font-mono text-sm" maxLength={7} />
+                  <Button variant="outline" size="sm" onClick={handleLayoutColorChange}>
+                    Salvar Cor
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
