@@ -710,16 +710,17 @@ Boa sorte❣️`;
   };
 
   const checkBackgroundImageCategories = async (eventId: number) => {
-    const imagePath = `assets/background_categories_event_${eventId}.png`;
+    const imagePath = `assets/background_highlight_event_${eventId}.png`;
     const {
       data
     } = await supabase.storage.from('candidates').getPublicUrl(imagePath);
 
-    // Check if the image actually exists by trying to fetch it
+    // Check if the image actually exists by trying to fetch it with cache busting
     try {
-      const response = await fetch(data.publicUrl);
+      const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`;
+      const response = await fetch(cacheBustedUrl);
       if (response.ok) {
-        setBackgroundImageCategoriesUrl(data.publicUrl);
+        setBackgroundImageCategoriesUrl(cacheBustedUrl);
       } else {
         setBackgroundImageCategoriesUrl(null);
       }
