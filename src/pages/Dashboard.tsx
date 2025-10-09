@@ -1168,7 +1168,7 @@ export default function Dashboard() {
 
       {/* Modal de votos da candidata */}
       <Dialog open={selectedCandidate !== null} onOpenChange={(open) => !open && setSelectedCandidate(null)}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               {selectedCandidate && (
@@ -1208,8 +1208,8 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2 pr-2">
                 {candidateVotes.map((vote) => (
-                  <div key={vote.id} className="flex items-start justify-between border-b border-muted pb-2 last:border-0 gap-3">
-                    <div className="flex-1 min-w-0">
+                  <div key={vote.id} className="flex items-start justify-between border-b border-muted pb-2 last:border-0 gap-2">
+                    <div className="min-w-0">
                       <div className="font-medium text-foreground">
                         {vote.votes} voto{vote.votes > 1 ? 's' : ''}
                       </div>
