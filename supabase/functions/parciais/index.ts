@@ -26,6 +26,13 @@ const SLOTS = [
   { x: 441, y: 995 },
 ] as const;
 
+// --- FRAME ERASE PADDING (ajuste fino conforme seu PNG de molduras) ---
+// cobrimos toda a área da moldura ao redor da foto + barra de nome
+const FRAME_PAD_LEFT   = 50;
+const FRAME_PAD_TOP    = 50;
+const FRAME_PAD_RIGHT  = 50;
+const FRAME_PAD_BOTTOM = 120; // inclui a área da barrinha do nome
+
 // ---------- COLOR HELPERS ----------
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
@@ -58,6 +65,23 @@ function recolorNonTransparent(img: Image, hex: string): Image {
     }
   }
   return out;
+}
+
+// Zera alpha (deixa totalmente transparente) no retângulo informado
+function clearRectAlpha(img: Image, x: number, y: number, w: number, h: number) {
+  const x0 = Math.max(0, Math.floor(x));
+  const y0 = Math.max(0, Math.floor(y));
+  const x1 = Math.min(img.width,  Math.floor(x + w));
+  const y1 = Math.min(img.height, Math.floor(y + h));
+  for (let yy = y0; yy < y1; yy++) {
+    for (let xx = x0; xx < x1; xx++) {
+      try {
+        const col = img.getPixelAt(xx, yy);
+        const [r,g,b] = Image.colorToRGBA(col);
+        img.setPixelAt(xx, yy, Image.rgbaToColor(r, g, b, 0)); // alpha 0
+      } catch {}
+    }
+  }
 }
 
 // Local TTF in Supabase Storage (public)
@@ -261,7 +285,20 @@ serve(async (req) => {
       ? framesRaw0.resize(CANVAS_W, CANVAS_H)
       : framesRaw0;
 
+    // Tinge as molduras
     const tintedFrames = recolorNonTransparent(framesRaw, frameColor);
+
+    // Remove (torna transparente) as molduras dos slots sem candidata
+    for (let i = (cands.length); i < SLOTS.length; i++) {
+      const slot = SLOTS[i];
+      const rx = slot.x - FRAME_PAD_LEFT;
+      const ry = slot.y - FRAME_PAD_TOP;
+      const rw = PHOTO_W + FRAME_PAD_LEFT + FRAME_PAD_RIGHT;
+      const rh = PHOTO_H + FRAME_PAD_TOP + FRAME_PAD_BOTTOM;
+      clearRectAlpha(tintedFrames, rx, ry, rw, rh);
+    }
+
+    // Só compõe as molduras (já “furadas” nos vazios) sobre o canvas
     canvas.composite(tintedFrames, 0, 0);
 
     // Name bars + texts
