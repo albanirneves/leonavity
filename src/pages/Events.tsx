@@ -798,6 +798,24 @@ Boa sorte❣️`;
         // Draw the image
         ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
         
+        // Get image data to remove white background
+        const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+        const data = imageData.data;
+        
+        // Remove white/near-white pixels (set alpha to 0)
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // If pixel is close to white (threshold: 240 for each channel)
+          if (r > 240 && g > 240 && b > 240) {
+            data[i + 3] = 0; // Set alpha to transparent
+          }
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+        
         canvas.toBlob(blob => {
           if (blob) {
             const resizedFile = new File([blob], file.name, {
