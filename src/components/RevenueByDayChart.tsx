@@ -26,7 +26,11 @@ export function RevenueByDayChart({ data }: RevenueByDayChartProps) {
 
   const filteredData = useMemo(() => {
     const days = periodDays[period];
-    return data.slice(-days);
+    console.log('RevenueByDayChart - data:', data);
+    console.log('RevenueByDayChart - period:', period, 'days:', days);
+    const result = data.slice(-days);
+    console.log('RevenueByDayChart - filteredData:', result);
+    return result;
   }, [data, period]);
 
   const stats = useMemo(() => {

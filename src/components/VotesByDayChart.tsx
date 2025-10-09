@@ -26,7 +26,11 @@ export function VotesByDayChart({ data }: VotesByDayChartProps) {
 
   const filteredData = useMemo(() => {
     const days = periodDays[period];
-    return data.slice(-days);
+    console.log('VotesByDayChart - data:', data);
+    console.log('VotesByDayChart - period:', period, 'days:', days);
+    const result = data.slice(-days);
+    console.log('VotesByDayChart - filteredData:', result);
+    return result;
   }, [data, period]);
 
   const stats = useMemo(() => {
