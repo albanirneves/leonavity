@@ -920,9 +920,9 @@ Boa sorte❣️`;
     }
     setIsUploadingImageCategories(true);
     try {
-      // Resize image to square format (1:1)
+      // Resize image to 6:9 format
       const resizedFile = await resizeImageToSquareFormat(file);
-      const imagePath = `assets/background_categories_event_${selectedEventForParciais.id}.png`;
+      const imagePath = `assets/background_highlight_event_${selectedEventForParciais.id}.png`;
 
       // Upload to Supabase Storage
       const {
@@ -945,7 +945,7 @@ Boa sorte❣️`;
       setBackgroundImageCategoriesUrl(cacheBustedUrl);
       toast({
         title: 'Sucesso',
-        description: 'Background Categorias atualizado com sucesso'
+        description: 'Moldura Primeiro Lugar atualizada com sucesso'
       });
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -965,7 +965,7 @@ Boa sorte❣️`;
 
   const handleRemoveBackgroundImageCategories = async () => {
     if (!selectedEventForParciais) return;
-    const imagePath = `assets/background_categories_event_${selectedEventForParciais.id}.png`;
+    const imagePath = `assets/background_highlight_event_${selectedEventForParciais.id}.png`;
     try {
       const {
         error
@@ -974,7 +974,7 @@ Boa sorte❣️`;
       setBackgroundImageCategoriesUrl(null);
       toast({
         title: 'Sucesso',
-        description: 'Background Categorias removido com sucesso'
+        description: 'Moldura Primeiro Lugar removida com sucesso'
       });
     } catch (error) {
       console.error('Error removing image:', error);
