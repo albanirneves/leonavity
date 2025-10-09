@@ -802,15 +802,21 @@ Boa sorte❣️`;
         const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
         const data = imageData.data;
         
-        // Remove white/near-white pixels (set alpha to 0)
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          
-          // If pixel is close to white (threshold: 240 for each channel)
-          if (r > 240 && g > 240 && b > 240) {
-            data[i + 3] = 0; // Set alpha to transparent
+        // Define a border margin (in pixels) to preserve decorative elements
+        const borderMargin = 15; // Preserve top/sides where logo and decorations are
+        
+        // Remove white/near-white pixels only in the interior area (not near borders)
+        for (let y = borderMargin; y < targetHeight - borderMargin; y++) {
+          for (let x = borderMargin; x < targetWidth - borderMargin; x++) {
+            const i = (y * targetWidth + x) * 4;
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            // If pixel is very close to pure white (stricter threshold: 250)
+            if (r > 250 && g > 250 && b > 250) {
+              data[i + 3] = 0; // Set alpha to transparent
+            }
           }
         }
         
