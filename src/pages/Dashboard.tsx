@@ -61,6 +61,8 @@ interface DashboardStats {
     event: string;
     category: string;
     photo_url?: string;
+    id_candidate: number;
+    id_category: number;
   }>;
   weeklyMovement: Array<{
     id: string;
@@ -110,6 +112,20 @@ export default function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [weeklyHistory, setWeeklyHistory] = useState<WeeklyHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<{
+    name: string;
+    id_candidate: number;
+    id_category: number;
+    photo_url?: string;
+  } | null>(null);
+  const [candidateVotes, setCandidateVotes] = useState<Array<{
+    id: string;
+    phone: string;
+    votes: number;
+    created_at: string;
+    category_name: string;
+  }>>([]);
+  const [candidateVotesLoading, setCandidateVotesLoading] = useState(false);
   const { toast } = useToast();
 
   const activeTab = searchParams.get('tab') || 'overview';
@@ -609,6 +625,58 @@ export default function Dashboard() {
     return phone;
   };
 
+  const fetchCandidateVotes = async (candidate: { name: string; id_candidate: number; id_category: number; photo_url?: string }) => {
+    if (!selectedEvent) return;
+    
+    setCandidateVotesLoading(true);
+    setSelectedCandidate(candidate);
+    
+    try {
+      const eventId = parseInt(selectedEvent);
+      
+      const { data: votes, error } = await supabase
+        .from('votes')
+        .select('id, phone, votes, created_at, id_category')
+        .eq('id_event', eventId)
+        .eq('id_candidate', candidate.id_candidate)
+        .eq('id_category', candidate.id_category)
+        .eq('payment_status', 'approved')
+        .order('created_at', { ascending: false })
+        .range(0, 999999);
+      
+      if (error) throw error;
+      
+      // Buscar nome da categoria
+      const { data: categoryData } = await supabase
+        .from('categories')
+        .select('name')
+        .eq('id_event', eventId)
+        .eq('id_category', candidate.id_category)
+        .single();
+      
+      const categoryName = categoryData?.name || `Categoria ${candidate.id_category}`;
+      
+      const votesWithCategory = (votes || []).map(vote => ({
+        id: vote.id.toString(),
+        phone: vote.phone,
+        votes: vote.votes,
+        created_at: vote.created_at,
+        category_name: categoryName
+      }));
+      
+      setCandidateVotes(votesWithCategory);
+    } catch (error) {
+      console.error('Error fetching candidate votes:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar votos da candidata',
+        variant: 'destructive'
+      });
+    } finally {
+      setCandidateVotesLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-6 py-6 space-y-6">
@@ -909,10 +977,19 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden p-0">
-                <div className="h-full overflow-y-auto px-6 pb-6">
-                  <div className="space-y-4">
+                  <div className="h-full overflow-y-auto px-6 pb-6">
+                   <div className="space-y-4">
                     {stats.topCandidates.map((candidate, index) => (
-                      <div key={index} className="border-b border-muted pb-3 last:border-0">
+                      <div 
+                        key={index} 
+                        className="border-b border-muted pb-3 last:border-0 cursor-pointer hover:bg-muted/50 transition-colors rounded-lg p-2 -mx-2"
+                        onClick={() => fetchCandidateVotes({
+                          name: candidate.name,
+                          id_candidate: candidate.id_candidate,
+                          id_category: candidate.id_category,
+                          photo_url: candidate.photo_url
+                        })}
+                      >
                         <div className="flex items-start gap-3">
                           {/* Número da posição */}
                           <div className="w-6 h-6 bg-gradient-brand rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-1">
@@ -1088,6 +1165,95 @@ export default function Dashboard() {
           )}
         </div>
       )}
+
+      {/* Modal de votos da candidata */}
+      <Dialog open={selectedCandidate !== null} onOpenChange={(open) => !open && setSelectedCandidate(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              {selectedCandidate && (
+                <>
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                    <img
+                      src={selectedCandidate.photo_url || '/placeholder.svg'}
+                      alt={selectedCandidate.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div className="font-semibold">{selectedCandidate.name}</div>
+                    <div className="text-sm text-muted-foreground font-normal">
+                      Todos os votos recebidos
+                    </div>
+                  </div>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            {candidateVotesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinner />
+              </div>
+            ) : candidateVotes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhum voto encontrado
+              </div>
+            ) : (
+              <div className="space-y-4 pr-2">
+                {candidateVotes.map((vote) => (
+                  <div key={vote.id} className="flex items-start gap-3 border-b border-muted pb-4 last:border-0">
+                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                      <img
+                        src={selectedCandidate?.photo_url || '/placeholder.svg'}
+                        alt={selectedCandidate?.name || ''}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <p className="font-medium text-sm md:text-base leading-tight">
+                          {selectedCandidate?.name}
+                        </p>
+                        <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full w-fit">
+                          {vote.category_name}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs md:text-sm text-muted-foreground">
+                        <span className="font-mono">{formatPhone(vote.phone)}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span>{vote.votes} voto{vote.votes > 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xs text-muted-foreground leading-tight">
+                        {(() => {
+                          const formatted = formatRelativeTime(vote.created_at);
+                          if (formatted.isToday) {
+                            return <span>{formatted.time}</span>;
+                          }
+                          return (
+                            <div className="flex flex-col items-end">
+                              <span>{formatted.date}</span>
+                              <span>{formatted.time}</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
