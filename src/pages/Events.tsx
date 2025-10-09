@@ -776,9 +776,9 @@ Boa sorte❣️`;
       const ctx = canvas.getContext('2d')!;
       const img = new Image();
       img.onload = async () => {
-        // 9:6 aspect ratio with max height of 500px
+        // 6:9 aspect ratio with max height of 500px
         const maxHeight = 500;
-        const targetWidth = Math.round(maxHeight * 1.5); // 9:6 = 1.5
+        const targetWidth = Math.round(maxHeight * (6/9)); // 6:9 = 0.6667
         const targetHeight = maxHeight;
         
         canvas.width = targetWidth;
@@ -1494,7 +1494,7 @@ Boa sorte❣️`;
                     </div>}
                   
                   {/* Image Preview */}
-                  {backgroundImageCategoriesUrl && <div className="w-32 h-20 border rounded-lg overflow-hidden bg-gray-100 mx-auto">
+                  {backgroundImageCategoriesUrl && <div className="w-20 h-32 border rounded-lg overflow-hidden bg-gray-100 mx-auto">
                       <img src={backgroundImageCategoriesUrl} alt="Moldura Primeiro Lugar" className="w-full h-full object-cover" />
                     </div>}
                 </div>
