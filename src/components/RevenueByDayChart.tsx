@@ -142,20 +142,25 @@ export function RevenueByDayChart({ data }: RevenueByDayChartProps) {
         </div>
 
         {/* Sparkline */}
-        {stats.hasMovement && (
-          <div className="h-20 bg-muted/30 rounded-lg p-2">
+        {stats.hasMovement ? (
+          <div className="h-24 w-full" style={{ minHeight: '96px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={filteredData}>
-                <Tooltip content={<CustomTooltip />} />
+              <LineChart data={filteredData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--brand))', strokeWidth: 1 }} />
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
                   stroke="hsl(var(--brand))" 
                   strokeWidth={3}
                   dot={false}
+                  isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-sm text-muted-foreground bg-muted/30 rounded-lg">
+            Sem dados para exibir
           </div>
         )}
 

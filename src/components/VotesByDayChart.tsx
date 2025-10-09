@@ -133,18 +133,23 @@ export function VotesByDayChart({ data }: VotesByDayChartProps) {
         </div>
 
         {/* Sparkline */}
-        {stats.hasMovement && (
-          <div className="h-20 bg-muted/30 rounded-lg p-2">
+        {stats.hasMovement ? (
+          <div className="h-24 w-full" style={{ minHeight: '96px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={filteredData}>
-                <Tooltip content={<CustomTooltip />} />
+              <BarChart data={filteredData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--success) / 0.1)' }} />
                 <Bar 
                   dataKey="votes" 
                   fill="hsl(var(--success))" 
                   radius={[4, 4, 0, 0]}
+                  isAnimationActive={false}
                 />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-sm text-muted-foreground bg-muted/30 rounded-lg">
+            Sem dados para exibir
           </div>
         )}
 
