@@ -455,11 +455,15 @@ export default function Dashboard() {
           .lte('created_at', endDate.toISOString())
           .range(0, 999999);
 
-        // Processar dados para os gráficos
+        // Processar dados para os gráficos considerando fuso horário brasileiro (UTC-3)
         revenueChart = dates.map(date => {
-          const dayVotes = dailyVotes?.filter(vote => 
-            vote.created_at.startsWith(date)
-          ) || [];
+          const dayVotes = dailyVotes?.filter(vote => {
+            // Converter timestamp UTC para horário brasileiro (UTC-3)
+            const voteDate = new Date(vote.created_at);
+            voteDate.setHours(voteDate.getHours() - 3);
+            const voteDateStr = voteDate.toISOString().split('T')[0];
+            return voteDateStr === date;
+          }) || [];
           
           const dayRevenue = dayVotes.reduce((sum, vote) => {
             const voteValue = Number(eventData.vote_value);
@@ -471,9 +475,13 @@ export default function Dashboard() {
         });
 
         votesChart = dates.map(date => {
-          const dayVotes = dailyVotes?.filter(vote => 
-            vote.created_at.startsWith(date)
-          ) || [];
+          const dayVotes = dailyVotes?.filter(vote => {
+            // Converter timestamp UTC para horário brasileiro (UTC-3)
+            const voteDate = new Date(vote.created_at);
+            voteDate.setHours(voteDate.getHours() - 3);
+            const voteDateStr = voteDate.toISOString().split('T')[0];
+            return voteDateStr === date;
+          }) || [];
           
           const totalVotes = dayVotes.reduce((sum, vote) => 
             sum + (Number(vote.votes) || 0), 0
