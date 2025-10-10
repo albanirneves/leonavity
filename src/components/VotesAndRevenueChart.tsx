@@ -135,37 +135,44 @@ export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenue
 
         {/* Lista de dias */}
         {stats.hasMovement ? (
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {stats.dailyData.map((day) => (
-              <div key={day.date} className="flex items-center justify-between py-3 border-b last:border-0">
-                <div className="flex-shrink-0 w-16 text-sm font-medium">
-                  {formatDate(day.date)}
-                </div>
-                <div className="flex items-center gap-6">
+          <div className="space-y-2">
+            {/* Cabeçalho */}
+            <div className="grid grid-cols-[60px_1fr_1fr] gap-2 px-2 pb-2 border-b text-xs text-muted-foreground font-medium">
+              <div>Data</div>
+              <div className="text-right">Votos</div>
+              <div className="text-right">Faturamento</div>
+            </div>
+            
+            {/* Lista com scroll */}
+            <div className="max-h-[280px] overflow-y-auto">
+              {stats.dailyData.map((day) => (
+                <div key={day.date} className="grid grid-cols-[60px_1fr_1fr] gap-2 items-center py-2 px-2 border-b last:border-0">
+                  <div className="text-sm font-medium">
+                    {formatDate(day.date)}
+                  </div>
+                  
                   {/* Votos */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Votos:</span>
-                    <span className="font-semibold text-base">{day.votes}</span>
-                    <span className={`text-sm ${
+                  <div className="flex items-center justify-end gap-1">
+                    <span className="font-semibold text-sm">{day.votes}</span>
+                    <span className={`text-xs ${
                       day.votesChange >= 0 ? 'text-success' : 'text-destructive'
                     }`}>
-                      {day.votesChange >= 0 ? '↑' : '↓'} {Math.abs(day.votesChange).toFixed(0)}%
+                      {day.votesChange >= 0 ? '↑' : '↓'}{Math.abs(day.votesChange).toFixed(0)}%
                     </span>
                   </div>
                   
                   {/* Faturamento */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Fatu:</span>
-                    <span className="font-semibold text-base">{formatCurrency(day.revenue)}</span>
-                    <span className={`text-sm ${
+                  <div className="flex items-center justify-end gap-1">
+                    <span className="font-semibold text-sm">{formatCurrency(day.revenue)}</span>
+                    <span className={`text-xs ${
                       day.revenueChange >= 0 ? 'text-success' : 'text-destructive'
                     }`}>
-                      {day.revenueChange >= 0 ? '↑' : '↓'} {Math.abs(day.revenueChange).toFixed(0)}%
+                      {day.revenueChange >= 0 ? '↑' : '↓'}{Math.abs(day.revenueChange).toFixed(0)}%
                     </span>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
