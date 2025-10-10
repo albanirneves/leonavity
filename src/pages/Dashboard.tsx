@@ -183,11 +183,12 @@ export default function Dashboard() {
           return voteDate >= week.start && voteDate <= week.end;
         }) || [];
         
-        const totalVotes = weekVotes.reduce((sum, vote) => sum + (vote.votes || 0), 0);
+        // Contar apenas votos aprovados (assim como no dashboard principal)
+        const paidVotes = weekVotes.filter(vote => vote.payment_status === 'approved');
+        const totalVotes = paidVotes.reduce((sum, vote) => sum + (vote.votes || 0), 0);
         
         // Calcular faturamento líquido
-        const paidVotes = weekVotes.filter(vote => vote.payment_status === 'approved');
-        const grossRevenue = paidVotes.reduce((sum, vote) => sum + (vote.votes || 0), 0) * event.vote_value;
+        const grossRevenue = totalVotes * event.vote_value;
         
         // Aplicar taxas baseadas no payment_status (assumindo PIX como padrão)
         const pixTaxRate = event.pix_tax / 100;
