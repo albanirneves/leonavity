@@ -1,7 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CustomButton } from '@/components/ui/button-variants';
-import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface DailyData {
   date: string;
@@ -14,16 +12,7 @@ interface VotesAndRevenueChartProps {
   revenueData: Array<{ date: string; revenue: number }>;
 }
 
-type FilterPeriod = '7d' | '14d' | '30d';
-
 export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenueChartProps) {
-  const [period, setPeriod] = useState<FilterPeriod>('7d');
-
-  const periodDays = {
-    '7d': 7,
-    '14d': 14,
-    '30d': 30
-  };
 
   // Combinar dados de votos e faturamento
   const combinedData = useMemo(() => {
@@ -56,28 +45,23 @@ export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenue
   }, [votesData, revenueData]);
 
   const filteredData = useMemo(() => {
-    const days = periodDays[period];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Filtrar dados até hoje e pegar os últimos X dias
+    // Filtrar dados até hoje
     const dataUntilToday = combinedData.filter(d => {
       const itemDate = new Date(d.date);
       return itemDate <= today;
     });
     
-    return dataUntilToday.slice(-days);
-  }, [combinedData, period]);
+    return dataUntilToday;
+  }, [combinedData]);
 
   const stats = useMemo(() => {
     if (filteredData.length === 0) {
       return {
         todayVotes: 0,
         todayRevenue: 0,
-        periodTotalVotes: 0,
-        periodTotalRevenue: 0,
-        votesChange: 0,
-        revenueChange: 0,
         dailyData: [],
         hasMovement: false
       };
@@ -86,25 +70,6 @@ export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenue
     const todayData = filteredData[filteredData.length - 1];
     const todayVotes = todayData?.votes || 0;
     const todayRevenue = todayData?.revenue || 0;
-    
-    const periodTotalVotes = filteredData.reduce((sum, d) => sum + d.votes, 0);
-    const periodTotalRevenue = filteredData.reduce((sum, d) => sum + d.revenue, 0);
-    
-    // Calcular variação do período (últimos X dias vs X dias anteriores)
-    const currentPeriodVotes = filteredData.slice(-periodDays[period]).reduce((sum, d) => sum + d.votes, 0);
-    const currentPeriodRevenue = filteredData.slice(-periodDays[period]).reduce((sum, d) => sum + d.revenue, 0);
-    
-    const previousPeriodData = combinedData.slice(-(periodDays[period] * 2), -periodDays[period]);
-    const previousPeriodVotes = previousPeriodData.reduce((sum, d) => sum + d.votes, 0);
-    const previousPeriodRevenue = previousPeriodData.reduce((sum, d) => sum + d.revenue, 0);
-    
-    const votesChange = previousPeriodVotes > 0 
-      ? ((currentPeriodVotes - previousPeriodVotes) / previousPeriodVotes) * 100 
-      : currentPeriodVotes > 0 ? 100 : 0;
-      
-    const revenueChange = previousPeriodRevenue > 0 
-      ? ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100 
-      : currentPeriodRevenue > 0 ? 100 : 0;
 
     // Preparar dados diários para a lista em ordem decrescente
     const dailyData = [...filteredData]
@@ -129,19 +94,15 @@ export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenue
         };
       });
 
-    const hasMovement = periodTotalVotes > 0 || periodTotalRevenue > 0;
+    const hasMovement = filteredData.some(d => d.votes > 0 || d.revenue > 0);
 
     return {
       todayVotes,
       todayRevenue,
-      periodTotalVotes,
-      periodTotalRevenue,
-      votesChange,
-      revenueChange,
       dailyData,
       hasMovement
     };
-  }, [filteredData, period, combinedData]);
+  }, [filteredData]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -163,96 +124,44 @@ export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenue
         <CardTitle className="text-lg md:text-xl">Votos e Faturamento</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Hoje</p>
+        {/* KPI - Hoje */}
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">Hoje</p>
+          <div className="flex items-center gap-4">
             <p className="text-xl md:text-2xl font-bold">{stats.todayVotes} votos</p>
             <p className="text-xl md:text-2xl font-bold">{formatCurrency(stats.todayRevenue)}</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Últimos {periodDays[period]} dias</p>
-            <div className="flex items-center gap-2">
-              <p className="text-xl md:text-2xl font-bold">{stats.periodTotalVotes}</p>
-              <div className="flex items-center gap-1 text-sm">
-                {stats.votesChange >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                )}
-                <span className={stats.votesChange >= 0 ? 'text-success' : 'text-destructive'}>
-                  {stats.votesChange >= 0 ? '+' : ''}{stats.votesChange.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="text-xl md:text-2xl font-bold">{formatCurrency(stats.periodTotalRevenue)}</p>
-              <div className="flex items-center gap-1 text-sm">
-                {stats.revenueChange >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                )}
-                <span className={stats.revenueChange >= 0 ? 'text-success' : 'text-destructive'}>
-                  {stats.revenueChange >= 0 ? '+' : ''}{stats.revenueChange.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filtros */}
-        <div className="flex gap-2">
-          {(['7d', '14d', '30d'] as FilterPeriod[]).map((p) => (
-            <CustomButton
-              key={p}
-              variant={period === p ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPeriod(p)}
-              className="flex-1 min-h-[44px]"
-            >
-              {p}
-            </CustomButton>
-          ))}
         </div>
 
         {/* Lista de dias */}
         {stats.hasMovement ? (
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {stats.dailyData.map((day) => (
-              <div key={day.date} className="flex items-center gap-3 py-3 border-b last:border-0">
+              <div key={day.date} className="flex items-center justify-between py-3 border-b last:border-0">
                 <div className="flex-shrink-0 w-16 text-sm font-medium">
                   {formatDate(day.date)}
                 </div>
-                <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-6">
                   {/* Votos */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Votos:</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-base">
-                        {day.votes}
-                      </span>
-                      <span className={`text-sm flex items-center gap-1 min-w-[60px] ${
-                        day.votesChange >= 0 ? 'text-success' : 'text-destructive'
-                      }`}>
-                        {day.votesChange >= 0 ? '↑' : '↓'} {Math.abs(day.votesChange).toFixed(0)}%
-                      </span>
-                    </div>
+                    <span className="font-semibold text-base">{day.votes}</span>
+                    <span className={`text-sm ${
+                      day.votesChange >= 0 ? 'text-success' : 'text-destructive'
+                    }`}>
+                      {day.votesChange >= 0 ? '↑' : '↓'} {Math.abs(day.votesChange).toFixed(0)}%
+                    </span>
                   </div>
                   
                   {/* Faturamento */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Faturamento:</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-base">
-                        {formatCurrency(day.revenue)}
-                      </span>
-                      <span className={`text-sm flex items-center gap-1 min-w-[60px] ${
-                        day.revenueChange >= 0 ? 'text-success' : 'text-destructive'
-                      }`}>
-                        {day.revenueChange >= 0 ? '↑' : '↓'} {Math.abs(day.revenueChange).toFixed(0)}%
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Fatu:</span>
+                    <span className="font-semibold text-base">{formatCurrency(day.revenue)}</span>
+                    <span className={`text-sm ${
+                      day.revenueChange >= 0 ? 'text-success' : 'text-destructive'
+                    }`}>
+                      {day.revenueChange >= 0 ? '↑' : '↓'} {Math.abs(day.revenueChange).toFixed(0)}%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -260,7 +169,7 @@ export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenue
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            Sem movimento nos últimos {periodDays[period]} dias
+            Sem movimento
           </div>
         )}
       </CardContent>
