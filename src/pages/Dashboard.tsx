@@ -19,8 +19,7 @@ import {
   Search,
   History
 } from 'lucide-react';
-import { RevenueByDayChart } from '@/components/RevenueByDayChart';
-import { VotesByDayChart } from '@/components/VotesByDayChart';
+import { VotesAndRevenueChart } from '@/components/VotesAndRevenueChart';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -1068,8 +1067,10 @@ export default function Dashboard() {
 
           {/* Charts */}
           <div className="space-y-6">
-            <RevenueByDayChart data={stats.revenueChart} />
-            <VotesByDayChart data={stats.votesChart} />
+            <VotesAndRevenueChart 
+              votesData={stats.votesChart} 
+              revenueData={stats.revenueChart}
+            />
           </div>
 
           {/* Category Rankings */}
