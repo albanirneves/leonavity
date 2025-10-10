@@ -180,7 +180,13 @@ export default function Dashboard() {
       for (const week of weeks) {
         const weekVotes = allVotes?.filter(vote => {
           const voteDate = new Date(vote.created_at);
-          return voteDate >= week.start && voteDate <= week.end;
+          // Ajustar para o fuso horário brasileiro (UTC-3)
+          const localDate = new Date(voteDate.getTime() - (3 * 60 * 60 * 1000));
+          const localDateOnly = new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate());
+          const weekStartOnly = new Date(week.start.getFullYear(), week.start.getMonth(), week.start.getDate());
+          const weekEndOnly = new Date(week.end.getFullYear(), week.end.getMonth(), week.end.getDate());
+          
+          return localDateOnly >= weekStartOnly && localDateOnly <= weekEndOnly;
         }) || [];
         
         // Contar apenas votos aprovados (assim como no dashboard principal)
