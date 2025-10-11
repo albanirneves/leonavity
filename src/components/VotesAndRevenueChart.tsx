@@ -137,17 +137,16 @@ export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenue
         {stats.hasMovement ? (
           <div className="space-y-2">
             {/* Cabeçalho */}
-            <div className="grid grid-cols-[50px_60px_1fr_50px] gap-1 px-2 pb-2 border-b text-xs text-muted-foreground font-medium">
+            <div className="grid grid-cols-[50px_60px_1fr] gap-1 px-2 pb-2 border-b text-xs text-muted-foreground font-medium">
               <div>Data</div>
               <div className="text-right">Votos</div>
               <div className="text-right">Faturamento</div>
-              <div className="text-right">Var.</div>
             </div>
             
             {/* Lista com scroll */}
             <div className="max-h-[280px] overflow-y-auto">
               {stats.dailyData.map((day) => (
-                <div key={day.date} className="grid grid-cols-[50px_60px_1fr_50px] gap-1 items-center py-2 px-2 border-b last:border-0">
+                <div key={day.date} className="grid grid-cols-[50px_60px_1fr] gap-1 items-center py-2 px-2 border-b last:border-0">
                   <div className="text-xs font-medium">
                     {formatDate(day.date)}
                   </div>
@@ -160,15 +159,6 @@ export function VotesAndRevenueChart({ votesData, revenueData }: VotesAndRevenue
                   {/* Faturamento */}
                   <div className="text-right">
                     <span className="font-semibold text-xs">{formatCurrency(day.revenue)}</span>
-                  </div>
-                  
-                  {/* Variação percentual (média de votos e faturamento) */}
-                  <div className="text-right">
-                    <span className={`text-xs ${
-                      day.votesChange >= 0 ? 'text-success' : 'text-destructive'
-                    }`}>
-                      {day.votesChange >= 0 ? '↑' : '↓'}{Math.abs(day.votesChange).toFixed(0)}%
-                    </span>
                   </div>
                 </div>
               ))}
